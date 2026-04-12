@@ -1,24 +1,40 @@
+export const dynamic = 'force-dynamic';
 
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSearchParams } from 'next/navigation';
+
 export default function StatusPage() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
   const [request, setRequest] = useState<any>(null);
+
   useEffect(() => {
-    if (id) supabase.from('contract_requests').select('*').eq('id', id).single().then(({ data }) => setRequest(data));
+    if (id) {
+      supabase
+        .from('contract_requests')
+        .select('*')
+        .eq('id', id)
+        .single()
+        .then(({ data }) => setRequest(data));
+    }
   }, [id]);
+
   if (!request) return <div className="p-6">Loading...</div>;
   const validation = request.collateral_validation_result || {};
+
   return (
     <div className="p-6 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Status Permintaan</h1>
-      <p>No. Request: {request.request_number}</p>
-      <p>Status: {request.status}</p>
-      <p>Risk Level: {validation.risk_level || 'Belum'}</p>
-      {validation.recommendation && <div className="bg-yellow-100 p-2 mt-2">{validation.recommendation}</div>}
+      <p><strong>No. Request:</strong> {request.request_number}</p>
+      <p><strong>Status:</strong> {request.status}</p>
+      <p><strong>Risk Level:</strong> {validation.risk_level || 'Belum'}</p>
+      {validation.recommendation && (
+        <div className="bg-yellow-100 p-2 mt-2">
+          <strong>Rekomendasi:</strong> {validation.recommendation}
+        </div>
+      )}
     </div>
   );
 }
