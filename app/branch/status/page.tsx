@@ -1,11 +1,10 @@
 'use client';
-export const dynamic = 'force-dynamic';
-
+import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSearchParams } from 'next/navigation';
 
-export default function StatusPage() {
+function StatusContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
   const [request, setRequest] = useState<any>(null);
@@ -36,5 +35,13 @@ export default function StatusPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function StatusPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Loading...</div>}>
+      <StatusContent />
+    </Suspense>
   );
 }
