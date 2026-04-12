@@ -21,13 +21,37 @@ export default function LoginPage() {
     });
     
     if (error) {
-      console.error('Login error detail:', error);
-      setErrorMsg(`${error.message} (${error.status})`);
+      console.error('Login error:', error);
+      setErrorMsg(error.message);
       setLoading(false);
+      return;
+    }
+    
+    console.log('Login success:', data);
+    
+    // Ambil profile user untuk menentukan redirect
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('organization')
+      .eq('id', data.user.id)
+      .single();
+    
+    if (profileError) {
+      console.error('Profile error:', profileError);
+      setErrorMsg('Gagal mendapatkan role user');
+      setLoading(false);
+      return;
+    }
+    
+    // Redirect berdasarkan role
+    if (profile?.organization === 'branch') {
+      router.push('/branch');
+    } else if (profile?.organization === 'erlangga') {
+      router.push('/lawyer');
     } else {
-      console.log('Login success:', data);
       router.push('/');
     }
+    setLoading(false);
   };
 
   return (
