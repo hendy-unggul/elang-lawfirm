@@ -28,27 +28,36 @@ export default function LoginPage() {
     }
     
     console.log('Login success:', data);
+    console.log('User ID:', data.user.id);
     
-    // Ambil profile user untuk menentukan redirect
+    // Coba fetch profile
+    console.log('Fetching profile...');
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('organization')
       .eq('id', data.user.id)
       .single();
     
+    console.log('Profile data:', profile);
+    console.log('Profile error:', profileError);
+    
     if (profileError) {
-      console.error('Profile error:', profileError);
-      setErrorMsg('Gagal mendapatkan role user');
+      console.error('Profile error detail:', profileError);
+      setErrorMsg(`Gagal mendapatkan role: ${profileError.message}`);
       setLoading(false);
       return;
     }
     
-    // Redirect berdasarkan role
+    console.log('Organization:', profile?.organization);
+    
     if (profile?.organization === 'branch') {
+      console.log('Redirect to /branch');
       router.push('/branch');
     } else if (profile?.organization === 'erlangga') {
+      console.log('Redirect to /lawyer');
       router.push('/lawyer');
     } else {
+      console.log('Redirect to /');
       router.push('/');
     }
     setLoading(false);
