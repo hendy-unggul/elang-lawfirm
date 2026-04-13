@@ -11,58 +11,55 @@ export default function LoginPage() {
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrorMsg('');
-    
-    const { data, error } = await supabase.auth.signInWithPassword({ 
-      email: email.trim(), 
-      password 
-    });
-    
-    if (error) {
-      console.error('Login error:', error);
-      setErrorMsg(error.message);
-      setLoading(false);
-      return;
-    }
-    
-    console.log('Login success:', data);
-    console.log('User ID:', data.user.id);
-    
-    // Coba fetch profile
-    console.log('Fetching profile...');
-    const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('organization')
-      .eq('id', data.user.id)
-      .single();
-    
-    console.log('Profile data:', profile);
-    console.log('Profile error:', profileError);
-    
-    if (profileError) {
-      console.error('Profile error detail:', profileError);
-      setErrorMsg(`Gagal mendapatkan role: ${profileError.message}`);
-      setLoading(false);
-      return;
-    }
-    
-    console.log('Organization:', profile?.organization);
-    
-    if (profile?.organization === 'branch') {
-      console.log('Redirect to /branch');
-      router.push('/branch');
-    } else if (profile?.organization === 'erlangga') {
-      console.log('Redirect to /lawyer');
-      router.push('/lawyer');
-    } else {
-      console.log('Redirect to /');
-      router.push('/');
-    }
+  e.preventDefault();
+  setLoading(true);
+  setErrorMsg('');
+  
+  const { data, error } = await supabase.auth.signInWithPassword({ 
+    email: email.trim(), 
+    password 
+  });
+  
+  if (error) {
+    console.error('Login error:', error);
+    setErrorMsg(error.message);
     setLoading(false);
-  };
+    return;
+  }
+  
+  console.log('Login success, user id:', data.user.id);
+  
+  const { data: profile, error: profileError } = await supabase
+    .from('user_profiles')
+    .select('organization')
+    .eq('id', data.user.id)
+    .single();
 
+  // ✅ Log lengkap
+  console.log('Profile data:', profile);
+  console.log('Profile error:', JSON.stringify(profileError));
+  console.log('Organization value:', profile?.organization);
+  console.log('Organization === branch?', profile?.organization === 'branch');
+
+  if (profileError) {
+    console.error('Profile fetch failed:', profileError);
+    setErrorMsg('Gagal mendapatkan role user');
+    setLoading(false);
+    return;
+  }
+  
+  console.log('Redirecting to:', profile?.organization);
+  
+  if (profile?.organization === 'branch') {
+    router.push('/branch');
+  } else if (profile?.organization === 'erlangga') {
+    router.push('/lawyer');
+  } else {
+    router.push('/');
+  }
+  
+  setLoading(false);
+};
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <form onSubmit={handleLogin} className="bg-white p-8 rounded shadow-md w-96">
