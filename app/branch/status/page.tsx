@@ -379,12 +379,12 @@ function StatusContent() {
     rejected: 'Ditolak',
   };
 
-  const badgeClass = {
+  const badgeClass = ({
     collateral_validation: 'badge-pending',
     under_review: 'badge-review',
     approved: 'badge-approved',
     rejected: 'badge-rejected',
-  }[request.status] || 'badge-pending';
+  } as Record<string, string>)[request.status] || 'badge-pending';
 
   const formatRp = (n: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
