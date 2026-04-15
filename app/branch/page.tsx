@@ -448,7 +448,7 @@ export default function BranchDashboard() {
 
     if (insertErr || !request) { setError('Gagal menyimpan permintaan. Coba lagi.'); setLoading(false); return; }
 
-    const res = await fetch('/api/validate-collateral', {
+    const res = await fetch('/api/data-intelligence', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ request_id: request.id }),
