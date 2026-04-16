@@ -457,6 +457,29 @@ export async function POST(req: NextRequest) {
         },
       })
       .eq('id', request_id);
+    // ── LEGAL RAG: anchor regulasi ──────────────────────────────
+let enrichedSystemPrompt = SYSTEM_PROMPT;
+try {
+  const { getLegalContext, injectLegalContext } = await import('@/lib/legal-rag-engine');
+  const legalContext = await getLegalContext(request);
+  enrichedSystemPrompt = injectLegalContext(SYSTEM_PROMPT, legalContext);
+} catch (ragErr) {
+  console.error('Legal RAG (non-critical):', ragErr);
+}
+
+// Update status
+await supabase.from('contract_requests')
+  .update({ status: 'under_analysis' })
+  .eq('id', request_id);
+
+// AI call — gunakan enrichedSystemPrompt bukan SYSTEM_PROMPT
+const aiResponse = await fetch(provider.url, {
+  method: 'POST',
+  headers: provider.buildHeaders(apiKey),
+  body: JSON.stringify(
+    provider.buildBody(enrichedSystemPrompt, buildUserPrompt(request, completeness))
+  ),
+});
 
     // ─────────────────────────────────────────────
     // STAGE 2 + 3: AI analisa compliance + risiko
