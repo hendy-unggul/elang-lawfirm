@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// ============================================================
-// MODEL PROVIDER CONFIG — ganti 1 baris untuk swap ke Claude
-// ============================================================
 const PROVIDER: 'deepseek' | 'claude' | 'openrouter' = 'deepseek';
 
 const PROVIDERS = {
@@ -59,20 +56,14 @@ const PROVIDERS = {
   },
 };
 
-// ============================================================
-// STAGE 1 — MINIMUM REQUIREMENT RULES PER JENIS JAMINAN
-// Dijalankan LOKAL, tanpa AI, sebelum apapun
-// ============================================================
-
 interface FieldCheck {
-  field: string;       // dot-path dari request object
-  label: string;       // nama ramah pengguna
-  reason: string;      // kenapa wajib secara hukum
-  regulation: string;  // dasar regulasi
+  field: string;
+  label: string;
+  reason: string;
+  regulation: string;
 }
 
 const MINIMUM_REQUIREMENTS: Record<string, FieldCheck[]> = {
-  // Semua jenis jaminan wajib ini
   _common: [
     { field: 'customer_name', label: 'Nama nasabah', reason: 'Identitas debitur wajib tercantum dalam akad', regulation: 'UU Perbankan No.10/1998 Ps.8' },
     { field: 'customer_id_number', label: 'NIK nasabah', reason: 'Verifikasi identitas wajib sesuai ketentuan KYC/AML', regulation: 'POJK No.12/POJK.01/2017 (KYC)' },
@@ -99,22 +90,14 @@ const MINIMUM_REQUIREMENTS: Record<string, FieldCheck[]> = {
   ],
 };
 
-// Conditional requirements berdasarkan nilai field
-const CONDITIONAL_REQUIREMENTS: Array<{
-  condition: (r: any) => boolean;
-  checks: FieldCheck[];
-}> = [
+const CONDITIONAL_REQUIREMENTS: Array<{ condition: (r: any) => boolean; checks: FieldCheck[] }> = [
   {
     condition: (r) => r.collateral?.details?.ownership_status === 'harta_bersama',
-    checks: [
-      { field: 'collateral.details.spouse_consent', label: 'Persetujuan pasangan', reason: 'Harta bersama tidak dapat dijaminkan tanpa persetujuan kedua pihak', regulation: 'UU Perkawinan No.1/1974 Ps.36 ayat 1' },
-    ],
+    checks: [{ field: 'collateral.details.spouse_consent', label: 'Persetujuan pasangan', reason: 'Harta bersama tidak dapat dijaminkan tanpa persetujuan kedua pihak', regulation: 'UU Perkawinan No.1/1974 Ps.36 ayat 1' }],
   },
   {
     condition: (r) => r.collateral?.details?.ownership_status === 'warisan_belum_dibagi',
-    checks: [
-      { field: 'collateral.details.heirs_certificate', label: 'Surat keterangan waris', reason: 'Pengikatan jaminan warisan wajib didahului pembuktian hak waris', regulation: 'KHI Ps.171, Instruksi Dirjen Agraria No.4/1981' },
-    ],
+    checks: [{ field: 'collateral.details.heirs_certificate', label: 'Surat keterangan waris', reason: 'Pengikatan jaminan warisan wajib didahului pembuktian hak waris', regulation: 'KHI Ps.171, Instruksi Dirjen Agraria No.4/1981' }],
   },
 ];
 
@@ -133,37 +116,26 @@ function checkCompleteness(request: any): CompletenessResult {
   const warnings: CompletenessResult['warnings'] = [];
   const collateralType = request.collateral?.type || '';
 
-  // Common checks
   for (const check of MINIMUM_REQUIREMENTS._common) {
     const val = getNestedValue(request, check.field);
-    if (!val && val !== 0 && val !== false) {
-      missing.push(check);
-    }
+    if (!val && val !== 0 && val !== false) missing.push(check);
   }
 
-  // Type-specific checks
   const typeChecks = MINIMUM_REQUIREMENTS[collateralType] || [];
   for (const check of typeChecks) {
     const val = getNestedValue(request, check.field);
-    if (!val && val !== 0) {
-      missing.push(check);
-    }
+    if (!val && val !== 0) missing.push(check);
   }
 
-  // Conditional checks
   for (const cond of CONDITIONAL_REQUIREMENTS) {
     if (cond.condition(request)) {
       for (const check of cond.checks) {
         const val = getNestedValue(request, check.field);
-        // false/undefined keduanya dianggap belum terpenuhi untuk boolean consent
-        if (!val) {
-          missing.push(check);
-        }
+        if (!val) missing.push(check);
       }
     }
   }
 
-  // Soft warnings (tidak memblokir tapi dicatat)
   if (collateralType === 'kendaraan_roda4' && request.collateral?.details?.stnk_active === false) {
     warnings.push({ field: 'stnk_active', label: 'STNK kadaluarsa', note: 'STNK tidak aktif — AI akan menyarankan jalur solusi perpanjangan' });
   }
@@ -173,10 +145,6 @@ function checkCompleteness(request: any): CompletenessResult {
 
   return { is_complete: missing.length === 0, missing_fields: missing, warnings };
 }
-
-// ============================================================
-// STAGE 2 — SYSTEM PROMPT dengan compliance framework lengkap
-// ============================================================
 
 const SYSTEM_PROMPT = `Kamu adalah AI Legal Analyst spesialis hukum jaminan kredit perbankan syariah Indonesia dengan keahlian mendalam pada:
 
@@ -192,11 +160,8 @@ REGULASI UTAMA YANG WAJIB DIRUJUK:
    - Fatwa No.4/DSN-MUI/IV/2000 (Murabahah)
    - Fatwa No.8/DSN-MUI/IV/2000 (Musyarakah)
    - Fatwa No.9/DSN-MUI/IV/2000 (Ijarah)
-   - Fatwa No.67/DSN-MUI/III/2008 (Anjak piutang syariah)
-   - Fatwa No.68/DSN-MUI/III/2008 (SBLC syariah)
    - Fatwa No.92/DSN-MUI/IV/2014 (Pembiayaan yang disertai rahn)
    - Fatwa No.115/DSN-MUI/IX/2017 (Akad wakalah bil ujrah)
-   - Fatwa No.135/DSN-MUI/V/2020 (Pembiayaan mudharabah)
 
 3. Hukum Jaminan
    - UU UUHT No.4/1996 (Hak Tanggungan atas tanah)
@@ -208,11 +173,10 @@ REGULASI UTAMA YANG WAJIB DIRUJUK:
    - UU Perkawinan No.1/1974 Ps.36 (harta bersama)
    - KUHPerdata Ps.1131-1149 (jaminan umum)
    - KHI Ps.171-214 (waris Islam)
-   - UU No.40/2007 (PT — jika penjamin badan hukum)
 
 FILOSOFI ANALISA:
 - Setiap masalah hukum WAJIB disertai minimal 2 jalur solusi konkret
-- Risk rating berdasarkan dampak ke bank jika terjadi sengketa, bukan sekadar kelengkapan dokumen
+- Risk rating berdasarkan dampak ke bank jika terjadi sengketa
 - Klausul yang disarankan harus siap pakai, bukan template generik
 - Bahasa profesional tapi dapat dipahami lawyer non-spesialis
 
@@ -223,7 +187,7 @@ OUTPUT WAJIB berupa JSON valid persis dengan struktur ini:
     "ojk_findings": ["<temuan spesifik dengan nomor pasal>"],
     "dsn_mui_status": "compliant" | "non_compliant" | "needs_clarification",
     "dsn_mui_findings": ["<temuan spesifik dengan nomor fatwa>"],
-    "applicable_regulations": ["<regulasi yang relevan dengan kasus ini>"]
+    "applicable_regulations": ["<regulasi yang relevan>"]
   },
   "stage3_analysis": {
     "risk_level": "rendah" | "sedang" | "tinggi",
@@ -239,9 +203,7 @@ OUTPUT WAJIB berupa JSON valid persis dengan struktur ini:
         "regulation_basis": "<dasar regulasi>"
       }
     ],
-    "suggested_clauses": [
-      "<klausul kontrak lengkap siap pakai — bukan template>"
-    ],
+    "suggested_clauses": ["<klausul kontrak lengkap siap pakai>"],
     "documents_required": [
       {
         "name": "<nama dokumen>",
@@ -259,9 +221,6 @@ OUTPUT WAJIB berupa JSON valid persis dengan struktur ini:
 
 Jangan tambahkan teks apapun di luar JSON.`;
 
-// ============================================================
-// BUILD USER PROMPT
-// ============================================================
 function buildUserPrompt(request: any, completeness: CompletenessResult): string {
   const c = request.collateral || {};
   const d = c.details || {};
@@ -335,57 +294,45 @@ ${completeness.warnings.map((w: any) => `- ${w.label}: ${w.note}`).join('\n')}
 `;
   }
 
-  // ── INJECT STAGE 1B INTELLIGENCE CONTEXT ──────────────────
-  // Hasil korelasi dan inferensi dari Stage 1b diumpan langsung
-  // ke Stage 2-3 agar analisa hukum tidak mengulang temuan yang
-  // sudah diketahui, melainkan mendalami implikasinya
+  // Inject Stage 1b intelligence context jika ada
   const intel = request.data_intelligence_result;
   if (intel && intel.stage === '1b') {
-
-    const criticalCorrelations = (intel.correlations_found || [])
-      .filter((c: any) => c.severity === 'kritis');
-    const importantCorrelations = (intel.correlations_found || [])
-      .filter((c: any) => c.severity === 'penting');
+    const criticalCorrelations = (intel.correlations_found || []).filter((c: any) => c.severity === 'kritis');
+    const importantCorrelations = (intel.correlations_found || []).filter((c: any) => c.severity === 'penting');
     const allInferences = intel.inferences || [];
 
     if (criticalCorrelations.length > 0) {
-      prompt += `
-=== TEMUAN KRITIS DARI ANALISA DATA INTELLIGENCE (Stage 1b) ===
-PENTING: Temuan berikut sudah diverifikasi dari korelasi data. Analisa hukummu HARUS mempertimbangkan setiap poin ini:
-
-${criticalCorrelations.map((c: any, i: number) => `[KRITIS-${i + 1}] Field terlibat: ${(c.fields_involved || []).join(' × ')}
+      prompt += `\n=== TEMUAN KRITIS DARI DATA INTELLIGENCE (Stage 1b) ===
+${criticalCorrelations.map((c: any, i: number) => `[KRITIS-${i + 1}] Field: ${(c.fields_involved || []).join(' × ')}
 Temuan: ${c.finding}
 Dasar hukum: ${c.legal_basis}
-Klarifikasi dibutuhkan: ${c.clarification_needed}`).join('\n\n')}
+Klarifikasi: ${c.clarification_needed}`).join('\n\n')}
 `;
     }
 
     if (importantCorrelations.length > 0) {
-      prompt += `
-=== KORELASI PENTING (Stage 1b) ===
+      prompt += `\n=== KORELASI PENTING (Stage 1b) ===
 ${importantCorrelations.map((c: any, i: number) => `[PENTING-${i + 1}] ${c.finding} (Dasar: ${c.legal_basis})`).join('\n')}
 `;
     }
 
     if (allInferences.length > 0) {
-      prompt += `
-=== INFERENSI DATA INTELLIGENCE ===
-${allInferences.map((inf: any, i: number) => `[INF-${i + 1}] Dari: ${inf.basis} → ${inf.inference} → Aksi: ${inf.action_required}`).join('\n')}
+      prompt += `\n=== INFERENSI DATA INTELLIGENCE ===
+${allInferences.map((inf: any, i: number) => `[INF-${i + 1}] ${inf.basis} → ${inf.inference} → Aksi: ${inf.action_required}`).join('\n')}
 `;
     }
 
     if (intel.readiness_score) {
-      prompt += `\nData readiness score dari Stage 1b: ${intel.readiness_score}/100\n`;
+      prompt += `\nData readiness score: ${intel.readiness_score}/100\n`;
     }
   }
 
   const estimatedFTV = c.type === 'kendaraan_roda4' ? '70-80%' : '80-90%';
-  prompt += `
-=== KONTEKS TAMBAHAN ===
-Estimasi FTV jika nilai jaminan setara nilai pembiayaan: ~${estimatedFTV} (perlu appraisal formal)
-Tanggal analisa  : ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+  prompt += `\n=== KONTEKS TAMBAHAN ===
+Estimasi FTV: ~${estimatedFTV} (perlu appraisal formal)
+Tanggal analisa: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
 
-Berikan analisa compliance dan risiko yang menyeluruh. Untuk setiap isu — terutama yang sudah diidentifikasi Stage 1b — berikan jalur solusi konkret dengan dasar regulasi yang spesifik.`;
+Berikan analisa compliance dan risiko yang menyeluruh dengan jalur solusi konkret per isu.`;
 
   return prompt;
 }
@@ -405,101 +352,78 @@ export async function POST(req: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Ambil data request
     const { data: request, error: fetchErr } = await supabase
-      .from('contract_requests')
-      .select('*')
-      .eq('id', request_id)
-      .single();
+      .from('contract_requests').select('*').eq('id', request_id).single();
 
     if (fetchErr || !request) {
       return NextResponse.json({ error: 'Request tidak ditemukan' }, { status: 404 });
     }
 
-    // ─────────────────────────────────────────────
-    // STAGE 1: Completeness check — lokal, tanpa AI
-    // ─────────────────────────────────────────────
+    // ── STAGE 1: Hard completeness check (lokal) ─────────────
     const completeness = checkCompleteness(request);
 
     if (!completeness.is_complete) {
-      // Simpan status incomplete beserta field yang kurang
-      await supabase
-        .from('contract_requests')
-        .update({
-          status: 'data_incomplete',
-          completeness_check: {
-            is_complete: false,
-            checked_at: new Date().toISOString(),
-            missing_fields: completeness.missing_fields,
-            warnings: completeness.warnings,
-          },
-        })
-        .eq('id', request_id);
+      await supabase.from('contract_requests').update({
+        status: 'data_incomplete',
+        completeness_check: {
+          is_complete: false,
+          checked_at: new Date().toISOString(),
+          missing_fields: completeness.missing_fields,
+          warnings: completeness.warnings,
+        },
+      }).eq('id', request_id);
 
       return NextResponse.json({
         success: false,
         stage: 1,
         status: 'data_incomplete',
         missing_fields: completeness.missing_fields,
-        message: `${completeness.missing_fields.length} field wajib belum diisi. Cabang perlu melengkapi sebelum analisa dapat dilanjutkan.`,
+        message: `${completeness.missing_fields.length} field wajib belum diisi.`,
       });
     }
 
-    // Update status ke compliance_check
-    await supabase
-      .from('contract_requests')
-      .update({
-        status: 'compliance_check',
-        completeness_check: {
-          is_complete: true,
-          checked_at: new Date().toISOString(),
-          warnings: completeness.warnings,
-        },
-      })
-      .eq('id', request_id);
-    // ── LEGAL RAG: anchor regulasi ──────────────────────────────
-let enrichedSystemPrompt = SYSTEM_PROMPT;
-try {
-  const { getLegalContext, injectLegalContext } = await import('@/lib/legal-rag-engine');
-  const legalContext = await getLegalContext(request);
-  enrichedSystemPrompt = injectLegalContext(SYSTEM_PROMPT, legalContext);
-} catch (ragErr) {
-  console.error('Legal RAG (non-critical):', ragErr);
-}
+    // Update ke compliance_check
+    await supabase.from('contract_requests').update({
+      status: 'compliance_check',
+      completeness_check: {
+        is_complete: true,
+        checked_at: new Date().toISOString(),
+        warnings: completeness.warnings,
+      },
+    }).eq('id', request_id);
 
-// Update status
-await supabase.from('contract_requests')
-  .update({ status: 'under_analysis' })
-  .eq('id', request_id);
-
-// AI call — gunakan enrichedSystemPrompt bukan SYSTEM_PROMPT
-const aiResponse = await fetch(provider.url, {
-  method: 'POST',
-  headers: provider.buildHeaders(apiKey),
-  body: JSON.stringify(
-    provider.buildBody(enrichedSystemPrompt, buildUserPrompt(request, completeness))
-  ),
-});
-
-    // ─────────────────────────────────────────────
-    // STAGE 2 + 3: AI analisa compliance + risiko
-    // ─────────────────────────────────────────────
+    // ── STAGE 2+3: AI Analysis ───────────────────────────────
+    // Deklarasi provider dan apiKey DULU sebelum digunakan
     const provider = PROVIDERS[PROVIDER];
     const apiKey = process.env[provider.apiKeyEnv];
     if (!apiKey) {
       return NextResponse.json({ error: `${provider.apiKeyEnv} tidak dikonfigurasi` }, { status: 500 });
     }
 
-    // Update status ke under_analysis
-    await supabase
-      .from('contract_requests')
+    // Legal RAG: inject anchor regulasi ke system prompt
+    // Dilakukan SETELAH provider/apiKey siap, SEBELUM AI call
+    let enrichedSystemPrompt = SYSTEM_PROMPT;
+    try {
+      const { getLegalContext, injectLegalContext } = await import('@/lib/legal-rag-engine');
+      const legalContext = await getLegalContext(request);
+      enrichedSystemPrompt = injectLegalContext(SYSTEM_PROMPT, legalContext);
+      console.log(`Legal RAG: ${legalContext.total_articles_found} pasal, ${legalContext.scenarios_matched} skenario`);
+    } catch (ragErr) {
+      console.error('Legal RAG (non-critical, lanjut tanpa anchor):', ragErr);
+    }
+
+    // Update status ke under_analysis (sekali saja)
+    await supabase.from('contract_requests')
       .update({ status: 'under_analysis' })
       .eq('id', request_id);
 
+    // AI call dengan enrichedSystemPrompt
     const aiResponse = await fetch(provider.url, {
       method: 'POST',
       headers: provider.buildHeaders(apiKey),
-      body: JSON.stringify(provider.buildBody(SYSTEM_PROMPT, buildUserPrompt(request, completeness))),
+      body: JSON.stringify(
+        provider.buildBody(enrichedSystemPrompt, buildUserPrompt(request, completeness))
+      ),
     });
 
     if (!aiResponse.ok) {
@@ -539,11 +463,8 @@ const aiResponse = await fetch(provider.url, {
       };
     }
 
-    // Flatten untuk backward compatibility dengan UI yang sudah ada
     const validationResult = {
-      // Stage 2
       compliance: parsed.stage2_compliance,
-      // Stage 3 (flat — sesuai format UI lama)
       risk_level: parsed.stage3_analysis?.risk_level,
       risk_score: parsed.stage3_analysis?.risk_score,
       summary: parsed.stage3_analysis?.summary,
@@ -552,25 +473,22 @@ const aiResponse = await fetch(provider.url, {
       suggested_clauses: parsed.stage3_analysis?.suggested_clauses || [],
       documents_required: parsed.stage3_analysis?.documents_required || [],
       ftv_assessment: parsed.stage3_analysis?.ftv_assessment,
-      // Meta
       compliance_notes: {
         ojk: parsed.stage2_compliance?.ojk_findings?.join(' | ') || '',
         dsn_mui: parsed.stage2_compliance?.dsn_mui_findings?.join(' | ') || '',
-        civil_law: parsed.stage3_analysis?.issues?.filter((i: any) => i.category === 'kepemilikan' || i.category === 'warisan').map((i: any) => i.text).join(' | ') || '',
+        civil_law: parsed.stage3_analysis?.issues
+          ?.filter((i: any) => i.category === 'kepemilikan' || i.category === 'warisan')
+          .map((i: any) => i.text).join(' | ') || '',
       },
       completeness_warnings: completeness.warnings,
       analyzed_at: new Date().toISOString(),
     };
 
-    // Simpan hasil + update status ke under_review
-    await supabase
-      .from('contract_requests')
-      .update({
-        collateral_validation_result: validationResult,
-        status: 'under_review',
-        validated_at: new Date().toISOString(),
-      })
-      .eq('id', request_id);
+    await supabase.from('contract_requests').update({
+      collateral_validation_result: validationResult,
+      status: 'under_review',
+      validated_at: new Date().toISOString(),
+    }).eq('id', request_id);
 
     return NextResponse.json({
       success: true,
