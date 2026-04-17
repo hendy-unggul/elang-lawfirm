@@ -110,7 +110,7 @@ export async function retrieveByKeywords(
 
   // FIX [2]: Tidak pakai .order() foreign table
   // FIX [3]: Gunakan .filter() dengan operator cs untuk array overlap
-  const topicsFilter = `{${[...new Set(topicsToSearch)].join(',')}}`;
+  const topicsFilter = `{${Array.from(new Set(topicsToSearch)).join(',')}}`;
   const collateralFilter = `{${collateralType}}`;
 
   const { data, error } = await supabase
@@ -202,7 +202,7 @@ function buildTagsFromConditions(conditions: Record<string, any>): string[] {
   if (conditions.collateral_type_group === 'tanah') tags.push('tanah', 'apht');
   if (conditions.stnk_expired) tags.push('kendaraan');
   if (conditions.ftv_exceeded) tags.push('ftv');
-  return [...new Set(tags)]; // deduplicate
+  return Array.from(new Set(tags)); // deduplicate
 }
 
 function mapScenario(row: any): MatchedScenario {
@@ -297,7 +297,7 @@ export async function getLegalContext(request: any): Promise<LegalContext> {
     return true;
   });
 
-  const applicableRegulations = [...new Set(uniqueAnchors.map(a => `${a.code} ${a.article_number}`))];
+  const applicableRegulations = Array.from(new Set(uniqueAnchors.map(a => `${a.code} ${a.article_number}`)));
   const anchorBlock = buildAnchorBlock(uniqueAnchors, scenarios);
 
   // Log usage — non-critical, jangan sampai crash
