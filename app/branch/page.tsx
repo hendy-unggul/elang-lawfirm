@@ -1,775 +1,580 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
+import {
+  AKAD_LIST, AKAD_BY_CODE, CATEGORY_LABELS,
+  getAkadByCategory, type AkadDefinition
+} from '@/lib/akad-system';
 
-const STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap');
-*, *::before, *::after { box-sizing: border-box; }
+// ── STYLES ──────────────────────────────────────────────────
+const S = `
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+.bp{min-height:100vh;background:#0c0d0f;font-family:'DM Sans',sans-serif;color:#e8e6e0}
+.bp-nav{height:56px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:sticky;top:0;z-index:100;background:#0c0d0f}
+.nav-left{display:flex;align-items:center;gap:14px}
+.nav-sigil{width:30px;height:30px;border:1px solid rgba(192,160,98,.4);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:14px;color:#c0a062}
+.nav-title{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:rgba(232,230,224,.4)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-user{font-size:12px;color:rgba(232,230,224,.3)}
+.btn-logout{background:none;border:none;cursor:pointer;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgba(232,230,224,.2);font-family:'DM Sans',sans-serif;transition:color .15s}
+.btn-logout:hover{color:rgba(232,230,224,.5)}
+.bp-body{max-width:760px;margin:0 auto;padding:36px 20px 80px}
+.page-eyebrow{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:rgba(192,160,98,.5);margin-bottom:8px}
+.page-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:400;color:#e8e6e0;margin-bottom:28px}
+.section{margin-bottom:28px}
+.section-lbl{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgba(232,230,224,.2);margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.section-lbl::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.05)}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:rgba(232,230,224,.4);margin-bottom:6px;font-weight:400}
+.field label span{color:rgba(232,112,90,.6);margin-left:3px}
+.inp{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:3px;padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:300;color:#e8e6e0;outline:none;transition:border-color .2s;-webkit-appearance:none}
+.inp::placeholder{color:rgba(232,230,224,.2)}
+.inp:focus{border-color:rgba(192,160,98,.35)}
+.inp-error{border-color:rgba(232,112,90,.4)!important}
+.sel{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:3px;padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:300;color:#e8e6e0;outline:none;cursor:pointer;transition:border-color .2s;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(232,230,224,0.3)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.sel:focus{border-color:rgba(192,160,98,.35)}
+.sel option{background:#1a1b1e;color:#e8e6e0}
+.sel optgroup{background:#14151a;color:rgba(192,160,98,.7);font-size:10px;letter-spacing:.1em}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.err-msg{font-size:11px;color:rgba(232,112,90,.7);margin-top:4px}
 
-.br-root {
-  min-height: 100vh;
-  background: #f5f3ef;
-  font-family: 'DM Sans', sans-serif;
-  color: #1a1a1a;
-}
+/* Akad card */
+.akad-card{background:rgba(192,160,98,.05);border:1px solid rgba(192,160,98,.2);border-radius:3px;padding:14px 16px;margin-bottom:14px}
+.akad-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
+.akad-name{font-size:14px;font-weight:500;color:#c0a062}
+.akad-arabic{font-size:13px;color:rgba(192,160,98,.4);direction:rtl}
+.akad-fatwa{font-size:10px;color:rgba(192,160,98,.4);margin-bottom:6px;font-family:'DM Mono',monospace}
+.akad-desc{font-size:12px;color:rgba(232,230,224,.45);line-height:1.6;margin-bottom:8px}
+.akad-uses{display:flex;flex-wrap:wrap;gap:5px}
+.akad-use{font-size:10px;background:rgba(255,255,255,.05);color:rgba(232,230,224,.3);padding:2px 8px;border-radius:2px}
+.akad-warning{background:rgba(192,160,98,.07);border-left:2px solid rgba(192,160,98,.3);padding:8px 12px;margin-top:8px;font-size:11px;color:rgba(192,160,98,.6);line-height:1.6}
+.akad-warning-lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(192,160,98,.4);margin-bottom:3px}
 
-/* Top nav */
-.br-nav {
-  background: #0c0d0f;
-  border-bottom: 1px solid rgba(192,160,98,0.2);
-  padding: 0 40px;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky; top: 0; z-index: 100;
-}
+/* Conditional field highlight */
+.field-highlight{background:rgba(192,160,98,.04);border:1px solid rgba(192,160,98,.15);border-radius:3px;padding:12px 14px;margin-bottom:14px}
+.fh-lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(192,160,98,.5);margin-bottom:8px}
 
-.nav-brand {
-  display: flex; align-items: center; gap: 12px;
-}
+/* Checkbox */
+.check-row{display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer}
+.check-box{width:18px;height:18px;border:1px solid rgba(255,255,255,.15);border-radius:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.check-box.checked{background:rgba(192,160,98,.2);border-color:rgba(192,160,98,.4)}
+.check-lbl{font-size:13px;font-weight:300;color:rgba(232,230,224,.6)}
 
-.nav-sigil {
-  width: 30px; height: 30px;
-  border: 1px solid rgba(192,160,98,0.45);
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Playfair Display', serif;
-  font-size: 14px; color: #c0a062;
-}
-
-.nav-name {
-  font-size: 13px; letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(232,230,224,0.7);
-  font-weight: 400;
-}
-
-.nav-right {
-  display: flex; align-items: center; gap: 20px;
-}
-
-.nav-role {
-  font-size: 11px; letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(192,160,98,0.6);
-}
-
-.nav-logout {
-  font-size: 11px; letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(232,230,224,0.3);
-  background: none; border: none;
-  cursor: pointer; font-family: inherit;
-  transition: color 0.2s;
-}
-.nav-logout:hover { color: rgba(232,230,224,0.6); }
-
-/* Page layout */
-.br-body {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 48px 40px 80px;
-}
-
-/* Page header */
-.page-header {
-  margin-bottom: 48px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  border-bottom: 1px solid rgba(26,26,26,0.1);
-  padding-bottom: 28px;
-}
-
-.page-eyebrow {
-  font-size: 11px; letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: #c0a062; margin-bottom: 8px;
-}
-
-.page-title {
-  font-family: 'Playfair Display', serif;
-  font-size: 28px; font-weight: 400;
-  color: #1a1a1a; line-height: 1.2;
-}
-
-.page-meta {
-  font-size: 12px; color: rgba(26,26,26,0.4);
-  text-align: right; line-height: 1.6;
-}
-
-/* Progress steps */
-.steps-bar {
-  display: flex; gap: 0;
-  margin-bottom: 40px;
-  background: white;
-  border: 1px solid rgba(26,26,26,0.08);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.step {
-  flex: 1; padding: 14px 18px;
-  display: flex; align-items: center; gap: 10px;
-  border-right: 1px solid rgba(26,26,26,0.08);
-  cursor: pointer; transition: background 0.15s;
-  position: relative;
-}
-
-.step:last-child { border-right: none; }
-.step:hover:not(.step-active) { background: rgba(26,26,26,0.02); }
-
-.step-active { background: #0c0d0f; }
-.step-done { background: rgba(192,160,98,0.06); }
-
-.step-num {
-  width: 24px; height: 24px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 500;
-  flex-shrink: 0;
-  border: 1px solid rgba(26,26,26,0.2);
-  color: rgba(26,26,26,0.4);
-  transition: all 0.2s;
-}
-
-.step-active .step-num {
-  background: #c0a062; border-color: #c0a062;
-  color: #0c0d0f;
-}
-
-.step-done .step-num {
-  background: rgba(192,160,98,0.15);
-  border-color: rgba(192,160,98,0.4);
-  color: #8a6e3a;
-}
-
-.step-label {
-  font-size: 12px; font-weight: 400;
-  color: rgba(26,26,26,0.4);
-  white-space: nowrap;
-}
-
-.step-active .step-label { color: rgba(232,230,224,0.7); }
-.step-done .step-label { color: rgba(138,110,58,0.8); }
-
-/* Section cards */
-.section-card {
-  background: white;
-  border: 1px solid rgba(26,26,26,0.08);
-  border-radius: 4px;
-  margin-bottom: 16px;
-  overflow: hidden;
-}
-
-.section-head {
-  padding: 20px 24px 18px;
-  border-bottom: 1px solid rgba(26,26,26,0.07);
-  display: flex; align-items: center;
-  justify-content: space-between;
-}
-
-.section-title {
-  font-family: 'Playfair Display', serif;
-  font-size: 16px; font-weight: 400;
-  color: #1a1a1a;
-}
-
-.section-badge {
-  font-size: 10px; letter-spacing: 0.14em;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 2px;
-}
-
-.badge-required { background: rgba(220,80,60,0.07); color: #a03020; }
-.badge-optional { background: rgba(26,26,26,0.05); color: rgba(26,26,26,0.4); }
-.badge-conditional { background: rgba(192,160,98,0.1); color: #8a6e3a; }
-
-.section-body { padding: 24px; }
-
-/* Field system */
-.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-.field-row.full { grid-template-columns: 1fr; }
-.field-row.three { grid-template-columns: 1fr 1fr 1fr; }
-
-.field {
-  display: flex; flex-direction: column; gap: 6px;
-}
-
-.field-label {
-  font-size: 11px; letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(26,26,26,0.45);
-  display: flex; align-items: center; gap: 6px;
-}
-
-.req-star { color: #c0a062; font-size: 13px; line-height: 1; }
-
-.field-input, .field-select, .field-textarea {
-  background: #faf9f7;
-  border: 1px solid rgba(26,26,26,0.12);
-  border-radius: 2px;
-  padding: 11px 14px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px; font-weight: 300;
-  color: #1a1a1a;
-  transition: border-color 0.18s, background 0.18s;
-  outline: none; width: 100%;
-}
-
-.field-input:focus, .field-select:focus, .field-textarea:focus {
-  border-color: rgba(192,160,98,0.6);
-  background: white;
-}
-
-.field-input::placeholder, .field-textarea::placeholder {
-  color: rgba(26,26,26,0.22);
-}
-
-.field-select { cursor: pointer; appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231a1a1a' stroke-opacity='0.3' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  padding-right: 36px;
-}
-
-.field-textarea { resize: vertical; min-height: 88px; line-height: 1.6; }
-
-.field-hint {
-  font-size: 11px; color: rgba(26,26,26,0.35);
-  line-height: 1.5; margin-top: 2px;
-}
-
-/* Currency display */
-.currency-wrap { position: relative; }
-.currency-prefix {
-  position: absolute; left: 14px; top: 50%;
-  transform: translateY(-50%);
-  font-size: 13px; color: rgba(26,26,26,0.35);
-  pointer-events: none; font-weight: 400;
-}
-.currency-wrap .field-input { padding-left: 46px; }
-
-/* Checkbox styled */
-.check-row {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 14px 16px;
-  background: #faf9f7;
-  border: 1px solid rgba(26,26,26,0.08);
-  border-radius: 2px;
-  margin-bottom: 10px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.check-row:hover { background: #f5f3ef; }
-.check-row:last-child { margin-bottom: 0; }
-
-.check-box {
-  width: 18px; height: 18px; flex-shrink: 0;
-  border: 1px solid rgba(26,26,26,0.2);
-  border-radius: 2px;
-  display: flex; align-items: center; justify-content: center;
-  margin-top: 1px; transition: all 0.15s;
-  background: white;
-}
-
-.check-box.checked {
-  background: #c0a062; border-color: #c0a062;
-}
-
-.check-text { flex: 1; }
-.check-title { font-size: 13px; font-weight: 400; color: #1a1a1a; }
-.check-desc { font-size: 12px; color: rgba(26,26,26,0.45); margin-top: 2px; line-height: 1.4; }
-
-/* Risk indicator */
-.risk-panel {
-  background: rgba(192,160,98,0.06);
-  border: 1px solid rgba(192,160,98,0.2);
-  border-radius: 4px;
-  padding: 16px 20px;
-  margin-top: 16px;
-  display: flex; align-items: flex-start; gap: 14px;
-}
-
-.risk-icon {
-  width: 20px; height: 20px; flex-shrink: 0;
-  opacity: 0.6; margin-top: 1px;
-}
-
-.risk-body { flex: 1; }
-.risk-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
-  color: #8a6e3a; margin-bottom: 4px; }
-.risk-text { font-size: 13px; color: rgba(26,26,26,0.6); line-height: 1.5; }
-
-/* Submit area */
-.submit-area {
-  display: flex; align-items: center;
-  justify-content: space-between;
-  padding: 28px 0 0;
-  border-top: 1px solid rgba(26,26,26,0.08);
-  margin-top: 8px;
-}
-
-.submit-note {
-  font-size: 12px; color: rgba(26,26,26,0.35);
-  max-width: 400px; line-height: 1.5;
-}
-
-.submit-btn {
-  background: #0c0d0f;
-  border: none; border-radius: 2px;
-  padding: 14px 32px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 12px; font-weight: 500;
-  letter-spacing: 0.14em; text-transform: uppercase;
-  color: #e8e6e0; cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-  display: flex; align-items: center; gap: 10px;
-  white-space: nowrap;
-}
-
-.submit-btn:hover:not(:disabled) { background: #1e2023; }
-.submit-btn:active:not(:disabled) { transform: scale(0.99); }
-.submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.spinner {
-  width: 14px; height: 14px;
-  border: 1.5px solid rgba(232,230,224,0.25);
-  border-top-color: #e8e6e0;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Alert */
-.alert {
-  display: flex; gap: 12px; padding: 14px 16px;
-  border-radius: 2px; margin-bottom: 20px;
-  font-size: 13px; line-height: 1.5;
-}
-.alert-error {
-  background: rgba(220,80,60,0.06);
-  border: 1px solid rgba(220,80,60,0.18);
-  color: #a03020;
-}
-
-@media (max-width: 640px) {
-  .field-row, .field-row.three { grid-template-columns: 1fr; }
-  .br-body { padding: 24px 20px 60px; }
-  .page-header { flex-direction: column; align-items: flex-start; gap: 8px; }
-  .steps-bar { display: none; }
-}
+/* Submit */
+.submit-area{margin-top:32px;padding-top:24px;border-top:1px solid rgba(255,255,255,.06)}
+.submit-note{font-size:12px;color:rgba(232,230,224,.25);line-height:1.6;margin-bottom:16px}
+.btn-submit{width:100%;padding:14px;background:#c0a062;border:none;border-radius:3px;font-family:'DM Sans',sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#0c0d0f;cursor:pointer;font-weight:500;transition:background .15s;display:flex;align-items:center;justify-content:center;gap:9px}
+.btn-submit:hover:not(:disabled){background:#d4b478}
+.btn-submit:disabled{opacity:.35;cursor:not-allowed}
+.spinner{width:13px;height:13px;border:1.5px solid rgba(12,13,15,.3);border-top-color:#0c0d0f;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:24px;right:24px;background:#1e2023;border:1px solid rgba(255,255,255,.08);border-radius:3px;padding:10px 16px;font-size:13px;color:rgba(232,230,224,.7);z-index:200;animation:toastIn .2s ease}
+@keyframes toastIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(max-width:640px){.grid2,.grid3{grid-template-columns:1fr}.bp-body{padding:24px 16px 60px}.bp-nav{padding:0 16px}}
 `;
 
-type CollateralType = 'tanah_shm' | 'tanah_shgb' | 'kendaraan_roda4' | 'bangunan';
-type OwnershipStatus = 'hak_milik_pribadi' | 'harta_bersama' | 'warisan_belum_dibagi' | 'kuasa';
+// ── TYPES ────────────────────────────────────────────────────
+interface FormData {
+  customer_name: string;
+  customer_id_number: string;
+  contract_type: string;
+  financing_amount: string;
+  rate_value: string;
+  tenor_months: string;
+  collateral_type: string;
+  owner_name: string;
+  ownership_status: string;
+  certificate_number: string;
+  address: string;
+  area_m2: string;
+  vehicle_year: string;
+  vehicle_plate: string;
+  stnk_active: boolean;
+  spouse_consent: boolean;
+  heirs_involved: boolean;
+  heirs_certificate: boolean;
+  goods_description: string;
+  project_description: string;
+  notes: string;
+}
 
-export default function BranchDashboard() {
+const INITIAL: FormData = {
+  customer_name: '', customer_id_number: '', contract_type: 'murabahah',
+  financing_amount: '', rate_value: '', tenor_months: '',
+  collateral_type: 'tanah_shm', owner_name: '', ownership_status: 'hak_milik_pribadi',
+  certificate_number: '', address: '', area_m2: '', vehicle_year: '', vehicle_plate: '',
+  stnk_active: true, spouse_consent: false, heirs_involved: false, heirs_certificate: false,
+  goods_description: '', project_description: '', notes: '',
+};
+
+const COLLATERAL_LABELS: Record<string, string> = {
+  tanah_shm: 'Tanah — Sertifikat Hak Milik (SHM)',
+  tanah_shgb: 'Tanah — Sertifikat Hak Guna Bangunan (SHGB)',
+  bangunan: 'Bangunan / Rumah / Ruko',
+  kendaraan_roda4: 'Kendaraan Roda Empat',
+};
+
+const OWNERSHIP_LABELS: Record<string, string> = {
+  hak_milik_pribadi: 'Hak milik pribadi',
+  harta_bersama: 'Harta bersama (dalam perkawinan)',
+  warisan_belum_dibagi: 'Harta warisan belum dibagi',
+  kuasa: 'Atas kuasa dari pemilik',
+};
+
+export default function BranchPage() {
   const router = useRouter();
+  const [form, setForm] = useState<FormData>(INITIAL);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState('');
+  const [user, setUser] = useState<any>(null);
   const [branchId, setBranchId] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
-  const [form, setForm] = useState({
-    customer_name: '',
-    customer_id_number: '',
-    financing_amount: '',
-    margin_percent: '5',
-    tenor_months: '12',
-    collateral_type: 'tanah_shm' as CollateralType,
-    owner_name: '',
-    ownership_status: 'hak_milik_pribadi' as OwnershipStatus,
-    heirs_involved: false,
-    heirs_certificate: false,
-    spouse_consent: false,
-    address: '',
-    area_m2: '',
-    certificate_number: '',
-    vehicle_plate: '',
-    vehicle_year: '',
-    stnk_active: true,
-    notes: '',
-  });
-
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }));
+  const akad = AKAD_BY_CODE[form.contract_type] as AkadDefinition | undefined;
+  const akadByCategory = getAkadByCategory();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) { router.push('/login'); return; }
-      setUserEmail(user.email || '');
-      supabase.from('user_profiles').select('branch_id').eq('id', user.id).single()
-        .then(({ data }) => { if (data) setBranchId(data.branch_id); });
+      if (!user) { router.replace('/login'); return; }
+      setUser(user);
+      supabase.from('user_profiles').select('branch_id,full_name').eq('id', user.id).single()
+        .then(({ data }) => { if (data?.branch_id) setBranchId(data.branch_id); });
     });
   }, []);
 
-  const isLandType = ['tanah_shm', 'tanah_shgb', 'bangunan'].includes(form.collateral_type);
-  const isVehicle = form.collateral_type === 'kendaraan_roda4';
-  const showHeirsFields = form.ownership_status === 'warisan_belum_dibagi';
-  const showSpouseConsent = form.ownership_status === 'harta_bersama';
+  const set = (k: keyof FormData, v: any) => {
+    setForm(f => ({ ...f, [k]: v }));
+    if (errors[k]) setErrors(e => { const n = { ...e }; delete n[k]; return n; });
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!branchId) { setError('Branch ID tidak ditemukan. Hubungi administrator.'); return; }
-    setLoading(true); setError('');
+  // Reset rate field saat akad berubah
+  const setAkad = (code: string) => {
+    setForm(f => ({ ...f, contract_type: code, rate_value: '' }));
+    setErrors({});
+  };
 
-    const collateralPayload = {
-      type: form.collateral_type,
-      details: {
-        owner_name: form.owner_name,
-        ownership_status: form.ownership_status,
-        certificate_number: form.certificate_number,
-        address: form.address,
-        ...(isLandType && { area_m2: form.area_m2 }),
-        ...(isVehicle && { vehicle_plate: form.vehicle_plate, vehicle_year: form.vehicle_year, stnk_active: form.stnk_active }),
-        ...(showHeirsFields && { heirs_involved: form.heirs_involved, heirs_certificate: form.heirs_certificate }),
-        ...(showSpouseConsent && { spouse_consent: form.spouse_consent }),
-        notes: form.notes,
-      },
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 4000); };
+
+  const validate = (): boolean => {
+    const e: Record<string, string> = {};
+    if (!form.customer_name.trim()) e.customer_name = 'Nama nasabah wajib diisi';
+    if (!form.customer_id_number.trim()) e.customer_id_number = 'NIK wajib diisi';
+    if (form.customer_id_number.length > 0 && form.customer_id_number.length !== 16) e.customer_id_number = 'NIK harus 16 digit';
+    if (!form.financing_amount || Number(form.financing_amount) <= 0) e.financing_amount = 'Nilai pembiayaan wajib diisi';
+    if (!form.rate_value || Number(form.rate_value) <= 0) e.rate_value = `${akad?.rate_label || 'Rate'} wajib diisi`;
+    if (!form.tenor_months || Number(form.tenor_months) <= 0) e.tenor_months = 'Tenor wajib diisi';
+    if (!form.owner_name.trim()) e.owner_name = 'Nama pemilik jaminan wajib diisi';
+    if (['tanah_shm', 'tanah_shgb', 'bangunan'].includes(form.collateral_type)) {
+      if (!form.certificate_number.trim()) e.certificate_number = 'Nomor sertifikat wajib diisi';
+      if (!form.address.trim()) e.address = 'Alamat jaminan wajib diisi';
+    }
+    if (form.collateral_type === 'kendaraan_roda4') {
+      if (!form.certificate_number.trim()) e.certificate_number = 'Nomor BPKB/Polisi wajib diisi';
+      if (!form.vehicle_year.trim()) e.vehicle_year = 'Tahun kendaraan wajib diisi';
+    }
+    if (form.ownership_status === 'harta_bersama' && !form.spouse_consent) {
+      e.spouse_consent = 'Persetujuan pasangan wajib ada untuk harta bersama (UU No.1/1974 Ps.36)';
+    }
+    if (akad?.requires_goods_desc && !form.goods_description.trim()) {
+      e.goods_description = 'Deskripsi barang wajib untuk akad ' + akad.name;
+    }
+    if (akad?.requires_project_desc && !form.project_description.trim()) {
+      e.project_description = 'Deskripsi proyek/usaha wajib untuk akad ' + akad.name;
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validate()) { showToast('Lengkapi field yang masih kosong'); return; }
+    setSubmitting(true);
+
+    const collateralDetails: Record<string, any> = {
+      owner_name: form.owner_name,
+      ownership_status: form.ownership_status,
+      certificate_number: form.certificate_number,
+      address: form.address,
+      area_m2: form.area_m2,
+      notes: form.notes,
     };
 
-    const { data: request, error: insertErr } = await supabase
-      .from('contract_requests')
-      .insert({
-        branch_id: branchId,
-        contract_type: 'Murabahah',
-        customer_name: form.customer_name,
-        customer_id_number: form.customer_id_number,
-        financing_amount: parseFloat(form.financing_amount.replace(/\./g, '')),
-        margin_percent: parseFloat(form.margin_percent),
-        tenor_months: parseInt(form.tenor_months),
-        collateral: collateralPayload,
-        status: 'collateral_validation',
-      })
-      .select().single();
+    if (form.collateral_type === 'kendaraan_roda4') {
+      collateralDetails.vehicle_year = form.vehicle_year;
+      collateralDetails.vehicle_plate = form.vehicle_plate;
+      collateralDetails.stnk_active = form.stnk_active;
+    }
+    if (form.ownership_status === 'harta_bersama') {
+      collateralDetails.spouse_consent = form.spouse_consent;
+    }
+    if (form.ownership_status === 'warisan_belum_dibagi') {
+      collateralDetails.heirs_involved = form.heirs_involved;
+      collateralDetails.heirs_certificate = form.heirs_certificate;
+    }
 
-    if (insertErr || !request) { setError('Gagal menyimpan permintaan. Coba lagi.'); setLoading(false); return; }
+    // Simpan rate dengan key yang sesuai akad
+    const rateKey = akad?.requires_margin ? 'margin_percent'
+      : akad?.requires_profit_share ? 'profit_share_percent'
+      : akad?.requires_rental_rate ? 'rental_rate'
+      : 'rate_percent';
 
-    const res = await fetch('/api/data-intelligence', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ request_id: request.id }),
-    });
+    const payload: Record<string, any> = {
+      branch_id: branchId,
+      contract_type: form.contract_type,
+      customer_name: form.customer_name.trim(),
+      customer_id_number: form.customer_id_number.trim(),
+      financing_amount: Number(form.financing_amount),
+      [rateKey]: Number(form.rate_value),
+      margin_percent: Number(form.rate_value), // backward compat
+      tenor_months: Number(form.tenor_months),
+      collateral: { type: form.collateral_type, details: collateralDetails },
+      status: 'collateral_validation',
+    };
 
-    if (res.ok) router.push(`/branch/status?id=${request.id}`);
-    else { setError('Proses validasi gagal. Coba beberapa saat lagi.'); setLoading(false); }
+    if (form.goods_description) payload.goods_description = form.goods_description;
+    if (form.project_description) payload.project_description = form.project_description;
+
+    const { data, error } = await supabase.from('contract_requests').insert(payload).select('id').single();
+
+    if (error || !data) {
+      showToast('Gagal menyimpan. Coba lagi.');
+      console.error(error);
+      setSubmitting(false);
+      return;
+    }
+
+    // Trigger pipeline
+    try {
+      await fetch('/api/data-intelligence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request_id: data.id }),
+      });
+    } catch { /* pipeline akan retry */ }
+
+    showToast('Pengajuan terkirim, AI sedang menganalisa…');
+    setTimeout(() => router.push(`/branch/status?id=${data.id}`), 1200);
   };
 
-  const formatCurrency = (val: string) => {
-    const num = val.replace(/\D/g, '');
-    return num.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  };
-
-  const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const isLand = ['tanah_shm', 'tanah_shgb', 'bangunan'].includes(form.collateral_type);
+  const isVehicle = form.collateral_type === 'kendaraan_roda4';
 
   return (
     <>
-      <style>{STYLES}</style>
-      <div className="br-root">
-        <nav className="br-nav">
-          <div className="nav-brand">
+      <style>{S}</style>
+      <div className="bp">
+        <nav className="bp-nav">
+          <div className="nav-left">
             <div className="nav-sigil">E</div>
-            <span className="nav-name">Erlangga Legal</span>
+            <span className="nav-title">Pengajuan Pembiayaan</span>
           </div>
           <div className="nav-right">
-            <span className="nav-role">Kantor Cabang</span>
-            <button className="nav-logout" onClick={() => { supabase.auth.signOut(); router.push('/login'); }}>
-              Keluar
-            </button>
+            <span className="nav-user">{user?.email}</span>
+            <button className="btn-logout" onClick={() => supabase.auth.signOut().then(() => router.replace('/login'))}>Keluar</button>
           </div>
         </nav>
 
-        <div className="br-body">
-          <div className="page-header">
-            <div>
-              <div className="page-eyebrow">Permintaan Baru</div>
-              <h1 className="page-title">Formulir Pengajuan Akad</h1>
-            </div>
-            <div className="page-meta">
-              {today}<br />
-              <span style={{ color: 'rgba(26,26,26,0.25)' }}>{userEmail}</span>
-            </div>
-          </div>
+        <div className="bp-body">
+          <div className="page-eyebrow">Kantor Cabang</div>
+          <div className="page-title">Form Pengajuan Pembiayaan Syariah</div>
 
-          {/* Steps */}
-          <div className="steps-bar">
-            {['Data Nasabah', 'Pembiayaan', 'Jaminan', 'Kirim'].map((s, i) => (
-              <div key={i} className={`step ${i === 0 ? 'step-active' : ''}`}>
-                <div className="step-num">{i + 1}</div>
-                <span className="step-label">{s}</span>
+          {/* ── BAGIAN 1: JENIS AKAD ── */}
+          <div className="section">
+            <div className="section-lbl">Jenis akad pembiayaan</div>
+
+            <div className="field">
+              <label>Pilih akad <span>*</span></label>
+              <select className="sel" value={form.contract_type} onChange={e => setAkad(e.target.value)}>
+                {Object.entries(akadByCategory).map(([cat, list]) => (
+                  <optgroup key={cat} label={`── ${CATEGORY_LABELS[cat] || cat}`}>
+                    {list.map(a => (
+                      <option key={a.code} value={a.code}>{a.name} — {a.arabic}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+
+            {/* Info card akad yang dipilih */}
+            {akad && (
+              <div className="akad-card">
+                <div className="akad-top">
+                  <div className="akad-name">{akad.name}</div>
+                  <div className="akad-arabic">{akad.arabic}</div>
+                </div>
+                <div className="akad-fatwa">{akad.fatwa_dsn.join(' · ')}</div>
+                <div className="akad-desc">{akad.description}</div>
+                <div className="akad-uses">
+                  {akad.use_cases.map((u, i) => <span key={i} className="akad-use">{u}</span>)}
+                </div>
+                {akad.warnings.length > 0 && (
+                  <div className="akad-warning">
+                    <div className="akad-warning-lbl">Perhatian</div>
+                    {akad.warnings.map((w, i) => <div key={i}>· {w}</div>)}
+                  </div>
+                )}
               </div>
-            ))}
+            )}
           </div>
 
-          <form onSubmit={handleSubmit}>
-            {error && (
-              <div className="alert alert-error">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
-                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.2"/>
-                  <path d="M8 4.5v4M8 10.5v1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
-                {error}
+          {/* ── BAGIAN 2: DATA NASABAH ── */}
+          <div className="section">
+            <div className="section-lbl">Data nasabah</div>
+            <div className="grid2">
+              <div className="field">
+                <label>Nama lengkap nasabah <span>*</span></label>
+                <input className={`inp ${errors.customer_name ? 'inp-error' : ''}`}
+                  value={form.customer_name} onChange={e => set('customer_name', e.target.value)}
+                  placeholder="Nama sesuai KTP" />
+                {errors.customer_name && <div className="err-msg">{errors.customer_name}</div>}
+              </div>
+              <div className="field">
+                <label>NIK (16 digit) <span>*</span></label>
+                <input className={`inp ${errors.customer_id_number ? 'inp-error' : ''}`}
+                  value={form.customer_id_number} onChange={e => set('customer_id_number', e.target.value.replace(/\D/g, '').slice(0, 16))}
+                  placeholder="3271012501850001" maxLength={16} />
+                {errors.customer_id_number && <div className="err-msg">{errors.customer_id_number}</div>}
+              </div>
+            </div>
+          </div>
+
+          {/* ── BAGIAN 3: STRUKTUR PEMBIAYAAN (dinamis per akad) ── */}
+          <div className="section">
+            <div className="section-lbl">Struktur pembiayaan</div>
+
+            <div className="grid3">
+              <div className="field">
+                <label>{akad?.amount_label || 'Nilai pembiayaan'} <span>*</span></label>
+                <input className={`inp ${errors.financing_amount ? 'inp-error' : ''}`}
+                  type="number" value={form.financing_amount}
+                  onChange={e => set('financing_amount', e.target.value)}
+                  placeholder="Contoh: 500000000" />
+                {errors.financing_amount && <div className="err-msg">{errors.financing_amount}</div>}
+              </div>
+              <div className="field">
+                <label>{akad?.rate_label || 'Rate (%)'} <span>*</span></label>
+                <input className={`inp ${errors.rate_value ? 'inp-error' : ''}`}
+                  type="number" step="0.1" value={form.rate_value}
+                  onChange={e => set('rate_value', e.target.value)}
+                  placeholder={akad?.rate_placeholder || '0'} />
+                {errors.rate_value && <div className="err-msg">{errors.rate_value}</div>}
+              </div>
+              <div className="field">
+                <label>Tenor (bulan) <span>*</span></label>
+                <input className={`inp ${errors.tenor_months ? 'inp-error' : ''}`}
+                  type="number" value={form.tenor_months}
+                  onChange={e => set('tenor_months', e.target.value)}
+                  placeholder="Contoh: 60" />
+                {errors.tenor_months && <div className="err-msg">{errors.tenor_months}</div>}
+              </div>
+            </div>
+
+            {/* Field deskripsi barang — Murabahah, Salam, Istishna */}
+            {akad?.requires_goods_desc && (
+              <div className="field-highlight">
+                <div className="fh-lbl">Deskripsi objek / barang ({akad.name})</div>
+                <div className="field">
+                  <label>Spesifikasi barang/objek yang dibiayai <span>*</span></label>
+                  <textarea className={`inp ${errors.goods_description ? 'inp-error' : ''}`}
+                    rows={3} value={form.goods_description}
+                    onChange={e => set('goods_description', e.target.value)}
+                    placeholder={
+                      form.contract_type === 'murabahah' ? 'Contoh: Rumah 2 lantai LT 120m², LB 90m², Jl. Merdeka No.5 Bandung'
+                      : form.contract_type === 'salam' ? 'Contoh: Padi varietas IR64, 50 ton, kadar air maks 14%, panen November 2025'
+                      : 'Contoh: Gedung kantor 3 lantai, luas 400m², spesifikasi terlampir'
+                    }
+                    style={{ resize: 'vertical', minHeight: 70 }}
+                  />
+                  {errors.goods_description && <div className="err-msg">{errors.goods_description}</div>}
+                </div>
               </div>
             )}
 
-            {/* Section 1: Nasabah */}
-            <div className="section-card">
-              <div className="section-head">
-                <span className="section-title">Data Nasabah</span>
-                <span className="section-badge badge-required">Wajib</span>
-              </div>
-              <div className="section-body">
-                <div className="field-row">
-                  <div className="field">
-                    <label className="field-label">Nama lengkap <span className="req-star">*</span></label>
-                    <input className="field-input" placeholder="Sesuai KTP" value={form.customer_name}
-                      onChange={e => set('customer_name', e.target.value)} required />
-                  </div>
-                  <div className="field">
-                    <label className="field-label">Nomor KTP <span className="req-star">*</span></label>
-                    <input className="field-input" placeholder="16 digit NIK" value={form.customer_id_number}
-                      onChange={e => set('customer_id_number', e.target.value)}
-                      maxLength={16} required />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Section 2: Pembiayaan */}
-            <div className="section-card">
-              <div className="section-head">
-                <span className="section-title">Struktur Pembiayaan</span>
-                <span className="section-badge badge-required">Wajib</span>
-              </div>
-              <div className="section-body">
-                <div className="field-row three">
-                  <div className="field">
-                    <label className="field-label">Nilai pembiayaan <span className="req-star">*</span></label>
-                    <div className="currency-wrap">
-                      <span className="currency-prefix">Rp</span>
-                      <input className="field-input" placeholder="0" value={form.financing_amount}
-                        onChange={e => set('financing_amount', formatCurrency(e.target.value))}
-                        required />
-                    </div>
-                  </div>
-                  <div className="field">
-                    <label className="field-label">Margin (%)</label>
-                    <input className="field-input" type="number" step="0.1" min="0" max="30"
-                      value={form.margin_percent}
-                      onChange={e => set('margin_percent', e.target.value)} />
-                    <span className="field-hint">Contoh: 5 untuk 5%</span>
-                  </div>
-                  <div className="field">
-                    <label className="field-label">Tenor (bulan) <span className="req-star">*</span></label>
-                    <select className="field-select" value={form.tenor_months}
-                      onChange={e => set('tenor_months', e.target.value)}>
-                      {[6,12,18,24,36,48,60,84,120,180,240].map(t => (
-                        <option key={t} value={t}>{t} bulan</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Section 3: Jaminan */}
-            <div className="section-card">
-              <div className="section-head">
-                <span className="section-title">Objek Jaminan</span>
-                <span className="section-badge badge-required">Wajib</span>
-              </div>
-              <div className="section-body">
-                <div className="field-row">
-                  <div className="field">
-                    <label className="field-label">Jenis jaminan <span className="req-star">*</span></label>
-                    <select className="field-select" value={form.collateral_type}
-                      onChange={e => set('collateral_type', e.target.value as CollateralType)}>
-                      <option value="tanah_shm">Tanah — SHM</option>
-                      <option value="tanah_shgb">Tanah — SHGB</option>
-                      <option value="bangunan">Bangunan / Ruko / Rumah</option>
-                      <option value="kendaraan_roda4">Kendaraan roda 4</option>
-                    </select>
-                  </div>
-                  <div className="field">
-                    <label className="field-label">Status kepemilikan <span className="req-star">*</span></label>
-                    <select className="field-select" value={form.ownership_status}
-                      onChange={e => set('ownership_status', e.target.value as OwnershipStatus)}>
-                      <option value="hak_milik_pribadi">Hak milik pribadi</option>
-                      <option value="harta_bersama">Harta bersama suami-istri</option>
-                      <option value="warisan_belum_dibagi">Warisan belum dibagi</option>
-                      <option value="kuasa">Atas kuasa pemilik</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="field-row">
-                  <div className="field">
-                    <label className="field-label">Nama pemilik jaminan <span className="req-star">*</span></label>
-                    <input className="field-input" placeholder="Sesuai sertifikat / BPKB"
-                      value={form.owner_name} onChange={e => set('owner_name', e.target.value)} required />
-                  </div>
-                  <div className="field">
-                    <label className="field-label">
-                      {isVehicle ? 'Nomor BPKB / Polisi' : 'Nomor sertifikat'}
-                    </label>
-                    <input className="field-input"
-                      placeholder={isVehicle ? 'B 1234 XYZ' : 'No. sertifikat'}
-                      value={form.certificate_number}
-                      onChange={e => set('certificate_number', e.target.value)} />
-                  </div>
-                </div>
-
-                {isLandType && (
-                  <div className="field-row">
-                    <div className="field">
-                      <label className="field-label">Alamat jaminan <span className="req-star">*</span></label>
-                      <input className="field-input" placeholder="Alamat lengkap lokasi jaminan"
-                        value={form.address} onChange={e => set('address', e.target.value)} required />
-                    </div>
-                    <div className="field">
-                      <label className="field-label">Luas (m²)</label>
-                      <input className="field-input" type="number" placeholder="Luas tanah/bangunan"
-                        value={form.area_m2} onChange={e => set('area_m2', e.target.value)} />
-                    </div>
-                  </div>
-                )}
-
-                {isVehicle && (
-                  <div className="field-row">
-                    <div className="field">
-                      <label className="field-label">Tahun kendaraan</label>
-                      <input className="field-input" type="number" placeholder="Contoh: 2019"
-                        value={form.vehicle_year} onChange={e => set('vehicle_year', e.target.value)} />
-                    </div>
-                    <div className="field" style={{ justifyContent: 'flex-end' }}>
-                      <label className="field-label">Status STNK</label>
-                      <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-                        {[{ v: true, l: 'Aktif' }, { v: false, l: 'Kadaluarsa' }].map(opt => (
-                          <label key={String(opt.v)} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: form.stnk_active === opt.v ? '#1a1a1a' : 'rgba(26,26,26,0.45)' }}>
-                            <div style={{ width: 16, height: 16, borderRadius: '50%', border: `1px solid ${form.stnk_active === opt.v ? '#c0a062' : 'rgba(26,26,26,0.2)'}`, background: form.stnk_active === opt.v ? '#c0a062' : 'white', transition: 'all 0.15s' }}
-                              onClick={() => set('stnk_active', opt.v)} />
-                            {opt.l}
-                          </label>
-                        ))}
-                      </div>
-                      {!form.stnk_active && (
-                        <span className="field-hint" style={{ color: '#8a6e3a', marginTop: 6 }}>
-                          AI akan menyarankan jalur solusi perpanjangan STNK
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Conditional: Warisan */}
-                {showHeirsFields && (
-                  <div style={{ marginTop: 16 }}>
-                    <div style={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#8a6e3a', marginBottom: 10 }}>
-                      Kondisi warisan
-                    </div>
-                    <label className="check-row" onClick={() => set('heirs_involved', !form.heirs_involved)}>
-                      <div className={`check-box ${form.heirs_involved ? 'checked' : ''}`}>
-                        {form.heirs_involved && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#0c0d0f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                      </div>
-                      <div className="check-text">
-                        <div className="check-title">Seluruh ahli waris telah setuju</div>
-                        <div className="check-desc">Semua ahli waris yang tercantum dalam surat keterangan waris menyetujui penggunaan aset sebagai jaminan</div>
-                      </div>
-                    </label>
-                    <label className="check-row" onClick={() => set('heirs_certificate', !form.heirs_certificate)}>
-                      <div className={`check-box ${form.heirs_certificate ? 'checked' : ''}`}>
-                        {form.heirs_certificate && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#0c0d0f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                      </div>
-                      <div className="check-text">
-                        <div className="check-title">Surat keterangan waris tersedia</div>
-                        <div className="check-desc">Dokumen surat waris dari kelurahan / pengadilan agama sudah dimiliki</div>
-                      </div>
-                    </label>
-                    {!form.heirs_involved && (
-                      <div className="risk-panel">
-                        <svg className="risk-icon" viewBox="0 0 20 20" fill="none">
-                          <path d="M10 2L2 17h16L10 2z" stroke="#8a6e3a" strokeWidth="1.2" strokeLinejoin="round"/>
-                          <path d="M10 8v4M10 14v1" stroke="#8a6e3a" strokeWidth="1.4" strokeLinecap="round"/>
-                        </svg>
-                        <div className="risk-body">
-                          <div className="risk-label">Perhatian AI</div>
-                          <div className="risk-text">Jaminan warisan tanpa persetujuan seluruh ahli waris berpotensi batal demi hukum. AI akan menyiapkan jalur solusi dan klausul pengamanan.</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Conditional: Harta bersama */}
-                {showSpouseConsent && (
-                  <div style={{ marginTop: 16 }}>
-                    <div style={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#8a6e3a', marginBottom: 10 }}>
-                      Persetujuan pasangan
-                    </div>
-                    <label className="check-row" onClick={() => set('spouse_consent', !form.spouse_consent)}>
-                      <div className={`check-box ${form.spouse_consent ? 'checked' : ''}`}>
-                        {form.spouse_consent && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#0c0d0f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                      </div>
-                      <div className="check-text">
-                        <div className="check-title">Pasangan telah memberikan persetujuan tertulis</div>
-                        <div className="check-desc">Surat persetujuan bermaterai Rp10.000 dari suami/istri tersedia dan siap dilampirkan</div>
-                      </div>
-                    </label>
-                    {!form.spouse_consent && (
-                      <div className="risk-panel">
-                        <svg className="risk-icon" viewBox="0 0 20 20" fill="none">
-                          <path d="M10 2L2 17h16L10 2z" stroke="#8a6e3a" strokeWidth="1.2" strokeLinejoin="round"/>
-                          <path d="M10 8v4M10 14v1" stroke="#8a6e3a" strokeWidth="1.4" strokeLinecap="round"/>
-                        </svg>
-                        <div className="risk-body">
-                          <div className="risk-label">Wajib hukum</div>
-                          <div className="risk-text">UU Perkawinan No.1/1974 Pasal 36 — harta bersama tidak dapat dijaminkan tanpa persetujuan kedua pihak. AI akan menyiapkan template surat persetujuan.</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Section 4: Catatan */}
-            <div className="section-card">
-              <div className="section-head">
-                <span className="section-title">Catatan Tambahan</span>
-                <span className="section-badge badge-optional">Opsional</span>
-              </div>
-              <div className="section-body">
+            {/* Field deskripsi proyek/usaha — Mudharabah, Musyarakah, Istishna */}
+            {akad?.requires_project_desc && (
+              <div className="field-highlight">
+                <div className="fh-lbl">Deskripsi proyek / usaha ({akad.name})</div>
                 <div className="field">
-                  <label className="field-label">Informasi khusus untuk analis</label>
-                  <textarea className="field-textarea"
-                    placeholder="Kondisi khusus jaminan, riwayat kepemilikan, atau informasi lain yang relevan untuk analisa hukum…"
-                    value={form.notes}
-                    onChange={e => set('notes', e.target.value)} />
-                  <span className="field-hint">Semakin detail konteks yang diberikan, semakin akurat analisa AI</span>
+                  <label>Gambaran usaha yang akan dijalankan <span>*</span></label>
+                  <textarea className={`inp ${errors.project_description ? 'inp-error' : ''}`}
+                    rows={3} value={form.project_description}
+                    onChange={e => set('project_description', e.target.value)}
+                    placeholder={
+                      form.contract_type === 'mudharabah' ? 'Contoh: Usaha perdagangan sembako, omset Rp50jt/bulan, sudah berjalan 3 tahun'
+                      : form.contract_type === 'musyarakah' ? 'Contoh: Pengembangan usaha konveksi, kapasitas 5000 pcs/bulan'
+                      : 'Contoh: Pembangunan ruko 5 unit, lokasi strategis di kawasan bisnis'
+                    }
+                    style={{ resize: 'vertical', minHeight: 70 }}
+                  />
+                  {errors.project_description && <div className="err-msg">{errors.project_description}</div>}
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── BAGIAN 4: DATA JAMINAN ── */}
+          <div className="section">
+            <div className="section-lbl">Data jaminan</div>
+
+            <div className="grid2">
+              <div className="field">
+                <label>Jenis jaminan <span>*</span></label>
+                <select className="sel" value={form.collateral_type} onChange={e => set('collateral_type', e.target.value)}>
+                  {Object.entries(COLLATERAL_LABELS).map(([k, v]) => (
+                    <option key={k} value={k}>{v}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>Status kepemilikan <span>*</span></label>
+                <select className="sel" value={form.ownership_status} onChange={e => set('ownership_status', e.target.value)}>
+                  {Object.entries(OWNERSHIP_LABELS).map(([k, v]) => (
+                    <option key={k} value={k}>{v}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            {/* Submit */}
-            <div className="submit-area">
-              <p className="submit-note">
-                Setelah dikirim, AI akan menganalisa kelengkapan dan risiko hukum jaminan.
-                Hasil analisa dan draft kontrak akan tersedia dalam beberapa menit.
-              </p>
-              <button className="submit-btn" type="submit" disabled={loading || !branchId}>
-                {loading ? (
-                  <><div className="spinner" />Memproses…</>
-                ) : (
-                  <>Kirim untuk analisa</>
-                )}
-              </button>
+            <div className="field">
+              <label>Nama pemilik jaminan <span>*</span></label>
+              <input className={`inp ${errors.owner_name ? 'inp-error' : ''}`}
+                value={form.owner_name} onChange={e => set('owner_name', e.target.value)}
+                placeholder="Nama sesuai sertifikat/BPKB" />
+              {errors.owner_name && <div className="err-msg">{errors.owner_name}</div>}
             </div>
-          </form>
+
+            {/* Field tanah/bangunan */}
+            {isLand && (
+              <>
+                <div className="grid2">
+                  <div className="field">
+                    <label>
+                      {form.collateral_type === 'tanah_shm' ? 'Nomor SHM' : form.collateral_type === 'tanah_shgb' ? 'Nomor SHGB' : 'Nomor Sertifikat Tanah'} <span>*</span>
+                    </label>
+                    <input className={`inp ${errors.certificate_number ? 'inp-error' : ''}`}
+                      value={form.certificate_number} onChange={e => set('certificate_number', e.target.value)}
+                      placeholder="Contoh: SHM-12345-2019" />
+                    {errors.certificate_number && <div className="err-msg">{errors.certificate_number}</div>}
+                  </div>
+                  <div className="field">
+                    <label>Luas (m²)</label>
+                    <input className="inp" type="number" value={form.area_m2}
+                      onChange={e => set('area_m2', e.target.value)} placeholder="Contoh: 120" />
+                  </div>
+                </div>
+                <div className="field">
+                  <label>Alamat / lokasi jaminan <span>*</span></label>
+                  <input className={`inp ${errors.address ? 'inp-error' : ''}`}
+                    value={form.address} onChange={e => set('address', e.target.value)}
+                    placeholder="Alamat lengkap sesuai sertifikat" />
+                  {errors.address && <div className="err-msg">{errors.address}</div>}
+                </div>
+              </>
+            )}
+
+            {/* Field kendaraan */}
+            {isVehicle && (
+              <>
+                <div className="grid2">
+                  <div className="field">
+                    <label>Nomor Polisi / BPKB <span>*</span></label>
+                    <input className={`inp ${errors.certificate_number ? 'inp-error' : ''}`}
+                      value={form.certificate_number} onChange={e => set('certificate_number', e.target.value)}
+                      placeholder="Contoh: B 1234 ABC" />
+                    {errors.certificate_number && <div className="err-msg">{errors.certificate_number}</div>}
+                  </div>
+                  <div className="field">
+                    <label>Tahun kendaraan <span>*</span></label>
+                    <input className={`inp ${errors.vehicle_year ? 'inp-error' : ''}`}
+                      type="number" value={form.vehicle_year}
+                      onChange={e => set('vehicle_year', e.target.value)} placeholder="Contoh: 2020" />
+                    {errors.vehicle_year && <div className="err-msg">{errors.vehicle_year}</div>}
+                  </div>
+                </div>
+                <div className="field">
+                  <label>Merk / tipe kendaraan</label>
+                  <input className="inp" value={form.vehicle_plate}
+                    onChange={e => set('vehicle_plate', e.target.value)}
+                    placeholder="Contoh: Toyota Avanza 1.3 G MT" />
+                </div>
+                <div className="check-row" onClick={() => set('stnk_active', !form.stnk_active)}>
+                  <div className={`check-box ${form.stnk_active ? 'checked' : ''}`}>
+                    {form.stnk_active && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#c0a062" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
+                  <span className="check-lbl">STNK masih aktif / berlaku</span>
+                </div>
+                {!form.stnk_active && (
+                  <div className="akad-warning">
+                    <div className="akad-warning-lbl">Perhatian — STNK kadaluarsa</div>
+                    AI akan mendeteksi kondisi ini dan memberikan jalur solusi perpanjangan dalam analisa.
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Kondisi harta bersama */}
+            {form.ownership_status === 'harta_bersama' && (
+              <div className="field-highlight">
+                <div className="fh-lbl">Konfirmasi harta bersama — UU No.1/1974 Ps.36</div>
+                <div className="check-row" onClick={() => set('spouse_consent', !form.spouse_consent)}>
+                  <div className={`check-box ${form.spouse_consent ? 'checked' : ''}`}>
+                    {form.spouse_consent && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#c0a062" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
+                  <span className="check-lbl">Pasangan telah memberikan persetujuan tertulis bermaterai</span>
+                </div>
+                {errors.spouse_consent && <div className="err-msg" style={{ marginTop: 6 }}>{errors.spouse_consent}</div>}
+              </div>
+            )}
+
+            {/* Kondisi warisan */}
+            {form.ownership_status === 'warisan_belum_dibagi' && (
+              <div className="field-highlight">
+                <div className="fh-lbl">Konfirmasi status warisan — KHI Ps.171</div>
+                <div className="check-row" onClick={() => set('heirs_involved', !form.heirs_involved)}>
+                  <div className={`check-box ${form.heirs_involved ? 'checked' : ''}`}>
+                    {form.heirs_involved && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#c0a062" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
+                  <span className="check-lbl">Seluruh ahli waris setuju dan tidak ada yang di bawah umur</span>
+                </div>
+                <div className="check-row" style={{ marginTop: 4 }} onClick={() => set('heirs_certificate', !form.heirs_certificate)}>
+                  <div className={`check-box ${form.heirs_certificate ? 'checked' : ''}`}>
+                    {form.heirs_certificate && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#c0a062" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </div>
+                  <span className="check-lbl">Surat keterangan waris sudah tersedia</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── BAGIAN 5: CATATAN ── */}
+          <div className="section">
+            <div className="section-lbl">Catatan tambahan</div>
+            <div className="field">
+              <label>Informasi lain yang perlu diketahui lawyer / AI</label>
+              <textarea className="inp" rows={3} value={form.notes}
+                onChange={e => set('notes', e.target.value)}
+                placeholder="Contoh: Nasabah sudah punya rekening aktif 3 tahun, pekerjaan PNS, ada jaminan tambahan BPKB motor..."
+                style={{ resize: 'vertical', minHeight: 80 }} />
+            </div>
+          </div>
+
+          {/* ── SUBMIT ── */}
+          <div className="submit-area">
+            <div className="submit-note">
+              Setelah dikirim, AI akan menganalisa data dalam beberapa menit. Pantau status di halaman riwayat pengajuan.
+              Pastikan semua data sudah benar — perubahan setelah pengiriman memerlukan pengajuan ulang.
+            </div>
+            <button className="btn-submit" onClick={handleSubmit} disabled={submitting}>
+              {submitting ? <span className="spinner" /> : null}
+              {submitting ? 'Mengirim & menganalisa…' : 'Kirim pengajuan'}
+            </button>
+          </div>
         </div>
       </div>
+
+      {toast && <div className="toast">{toast}</div>}
     </>
   );
 }
