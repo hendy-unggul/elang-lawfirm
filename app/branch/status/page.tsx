@@ -225,7 +225,7 @@ function getStageState(status: string, stageKey: string) {
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
   data_incomplete:   { label: 'Data tidak lengkap', cls: 'sb-incomplete' },
-  data_intelligence: { label: 'Analisa korelasi data', cls: 'sb-check' },
+  data_intelligence: { label: 'Verifikasi kesesuaian akad', cls: 'sb-check' },
   compliance_check:  { label: 'Cek regulasi', cls: 'sb-check' },
   under_analysis:    { label: 'Analisa AI berjalan', cls: 'sb-analysis' },
   analysis_failed:   { label: 'Analisa gagal', cls: 'sb-incomplete' },
@@ -348,7 +348,7 @@ function StatusContent() {
         <nav className="st-nav">
           <div className="nav-brand">
             <div className="nav-sigil">E</div>
-            <span className="nav-name">Erlangga Legal</span>
+            <span className="nav-name">Erlangga SCC</span>
           </div>
           <button className="nav-back" onClick={() => router.push('/branch')}>← Permintaan baru</button>
         </nav>
