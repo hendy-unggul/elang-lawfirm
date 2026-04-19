@@ -6,7 +6,7 @@ import {
   AKAD_LIST, AKAD_BY_CODE, CATEGORY_LABELS,
   getAkadByCategory, type AkadDefinition
 } from '@/lib/akad-system';
-import { NotificationBell, StatusToastContainer } from '@/lib/notification-system';
+import { NotificationProvider, NotificationBell, StatusToastContainer } from '@/lib/notification-system';
 
 // ── STYLES ──────────────────────────────────────────────────
 const S = `
@@ -263,6 +263,7 @@ export default function BranchPage() {
   const isVehicle = form.collateral_type === 'kendaraan_roda4';
 
   return (
+    <NotificationProvider branchId={branchId}>
     <>
       <style>{S}</style>
       <div className="bp">
@@ -272,7 +273,7 @@ export default function BranchPage() {
             <span className="nav-title">Erlangga SCC — Pengajuan Akad</span>
           </div>
           <div className="nav-right">
-            <NotificationBell branchId={branchId} />
+            <NotificationBell />
             <span className="nav-user">{user?.email}</span>
             <button className="btn-logout" onClick={() => supabase.auth.signOut().then(() => router.replace('/login'))}>Keluar</button>
           </div>
@@ -676,7 +677,8 @@ export default function BranchPage() {
       </div>
 
       {toast && <div className="toast">{toast}</div>}
-      <StatusToastContainer branchId={branchId} />
+      <StatusToastContainer />
     </>
+    </NotificationProvider>
   );
 }
