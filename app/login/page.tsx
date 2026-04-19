@@ -371,29 +371,29 @@ export default function LoginPage() {
             <div className="brand-sigil">E</div>
             <div>
               <div className="brand-name">Erlangga</div>
-              <div className="brand-tagline">Legal Intelligence</div>
+              <div className="brand-tagline">Syariah Contract Compliance</div>
             </div>
           </div>
 
           <div className="login-headline">
-            <div className="headline-eyebrow">Sistem Analisa Akad</div>
+            <div className="headline-eyebrow">Syariah Contract Compliance</div>
             <h1 className="headline-main">
-              Kecerdasan hukum<br />
-              untuk setiap <em>keputusan</em><br />
-              pembiayaan
+              Setiap akad,<br />
+              diverifikasi sebelum<br />
+              <em>ditandatangani</em>
             </h1>
             <p className="headline-sub">
-              Platform AI yang memahami kompleksitas hukum jaminan,
-              kepatuhan OJK, dan prinsip syariah — bukan sekadar
-              mengecek dokumen, tapi mencari solusi.
+              Platform AI yang memastikan setiap kontrak syariah
+              tidak bertentangan dengan fatwa DSN-MUI dan regulasi OJK —
+              sebelum akad dieksekusi.
             </p>
           </div>
 
           <div className="feature-list">
             {[
-              'Analisa jaminan berbasis fatwa DSN-MUI & POJK',
-              'Deteksi dilema hukum dan jalur solusi otomatis',
-              'Draft kontrak compliance siap tanda tangan',
+              'Verifikasi akad terhadap fatwa DSN-MUI & POJK',
+              'Deteksi potensi sengketa sebelum kontrak ditandatangani',
+              'Clearance hukum dengan anchor regulasi terverifikasi',
             ].map((f, i) => (
               <div className="feature-item" key={i}>
                 <div className="feature-dot" />
