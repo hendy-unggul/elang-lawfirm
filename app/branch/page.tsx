@@ -269,7 +269,7 @@ export default function BranchPage() {
         <nav className="bp-nav">
           <div className="nav-left">
             <div className="nav-sigil">E</div>
-            <span className="nav-title">Pengajuan Pembiayaan</span>
+            <span className="nav-title">Erlangga SCC — Pengajuan Akad</span>
           </div>
           <div className="nav-right">
             <NotificationBell branchId={branchId} />
@@ -279,8 +279,8 @@ export default function BranchPage() {
         </nav>
 
         <div className="bp-body">
-          <div className="page-eyebrow">Kantor Cabang</div>
-          <div className="page-title">Form Pengajuan Pembiayaan Syariah</div>
+          <div className="page-eyebrow">Syariah Contract Compliance</div>
+          <div className="page-title">Form Pengajuan Review Akad Syariah</div>
 
           {/* ── BAGIAN 1: JENIS AKAD ── */}
           <div className="section">
@@ -669,7 +669,7 @@ export default function BranchPage() {
             </div>
             <button className="btn-submit" onClick={handleSubmit} disabled={submitting}>
               {submitting ? <span className="spinner" /> : null}
-              {submitting ? 'Mengirim & menganalisa…' : 'Kirim pengajuan'}
+              {submitting ? 'Mengirim untuk review…' : 'Kirim untuk review compliance'}
             </button>
           </div>
         </div>
