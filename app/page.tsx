@@ -42,21 +42,21 @@ export default function LandingPage() {
       <style>{S}</style>
       <div className="lp">
         <div className="lp-sigil">E</div>
-        <div className="lp-label">Erlangga Legal Intelligence</div>
+        <div className="lp-label">Erlangga Syariah Contract Compliance</div>
         <h1 className="lp-title">
-          Kecerdasan hukum untuk setiap <em>keputusan</em> pembiayaan syariah
+          Compliance syariah untuk setiap <em>akad</em> sebelum kontrak ditandatangani
         </h1>
         <p className="lp-desc">
-          Platform AI yang menganalisa jaminan kredit, memverifikasi kepatuhan OJK & DSN-MUI,
-          dan menyiapkan draft kontrak — bukan sekadar mengecek dokumen, tapi mencari solusi.
+          Platform AI yang memverifikasi kesesuaian akad dengan fatwa DSN-MUI dan regulasi OJK,
+          mendeteksi risiko hukum sebelum kontrak ditandatangani, dan menyiapkan klausul pengamanan.
         </p>
         <a className="lp-btn" href="/login">Masuk ke sistem</a>
 
         <div className="lp-features">
           {[
-            { title: 'Analisa korelasi data', desc: 'AI membaca hubungan antar data yang tidak terlihat' },
-            { title: 'Compliance OJK & DSN', desc: 'Setiap pasal regulasi dijadikan anchor analisa' },
-            { title: 'Draft kontrak otomatis', desc: 'Klausul pengamanan langsung tersedia' },
+            { title: 'Verifikasi kesesuaian akad', desc: 'AI memeriksa struktur akad terhadap fatwa DSN-MUI' },
+            { title: 'Anchor regulasi terverifikasi', desc: 'Setiap temuan dikaitkan ke pasal dan fatwa spesifik' },
+            { title: 'Clearance sebelum eksekusi', desc: 'Kontrak hanya ditandatangani setelah compliance terpenuhi' },
           ].map((f, i) => (
             <div className="lp-feat" key={i}>
               <div className="lf-dot" />
@@ -67,7 +67,7 @@ export default function LandingPage() {
         </div>
 
         <div className="lp-footer">
-          Sistem ini hanya dapat diakses oleh personel yang telah mendapat otorisasi
+          Akses terbatas — hanya untuk personel yang telah mendapat otorisasi Erlangga
         </div>
       </div>
     </>
