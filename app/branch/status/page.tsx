@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { Suspense, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { NotificationBell, StatusToastContainer } from '@/lib/notification-system';
+import { NotificationProvider, NotificationBell, StatusToastContainer } from '@/lib/notification-system';
 
 const STYLES = `
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap');
@@ -341,7 +341,9 @@ function StatusContent() {
   const docsRequired: any[] = v.documents_required || [];
   const compliance = v.compliance || {};
 
+  const branchIdForNotif = req?.branch_id || null;
   return (
+    <NotificationProvider branchId={branchIdForNotif}>
     <>
       <style>{STYLES}</style>
       <div className="st-root">
@@ -350,7 +352,10 @@ function StatusContent() {
             <div className="nav-sigil">E</div>
             <span className="nav-name">Erlangga SCC</span>
           </div>
-          <button className="nav-back" onClick={() => router.push('/branch')}>← Permintaan baru</button>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <NotificationBell />
+            <button className="nav-back" onClick={() => router.push('/branch')}>← Permintaan baru</button>
+          </div>
         </nav>
 
         <div className="st-body">
@@ -753,7 +758,9 @@ function StatusContent() {
           )}
         </div>
       </div>
+      <StatusToastContainer />
     </>
+    </NotificationProvider>
   );
 }
 
