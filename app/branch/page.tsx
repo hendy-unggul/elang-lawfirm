@@ -6,6 +6,7 @@ import {
   AKAD_LIST, AKAD_BY_CODE, CATEGORY_LABELS,
   getAkadByCategory, type AkadDefinition
 } from '@/lib/akad-system';
+import { NotificationBell, StatusToastContainer } from '@/lib/notification-system';
 
 // ── STYLES ──────────────────────────────────────────────────
 const S = `
@@ -271,6 +272,7 @@ export default function BranchPage() {
             <span className="nav-title">Pengajuan Pembiayaan</span>
           </div>
           <div className="nav-right">
+            <NotificationBell branchId={branchId} />
             <span className="nav-user">{user?.email}</span>
             <button className="btn-logout" onClick={() => supabase.auth.signOut().then(() => router.replace('/login'))}>Keluar</button>
           </div>
@@ -674,6 +676,7 @@ export default function BranchPage() {
       </div>
 
       {toast && <div className="toast">{toast}</div>}
+      <StatusToastContainer branchId={branchId} />
     </>
   );
 }
