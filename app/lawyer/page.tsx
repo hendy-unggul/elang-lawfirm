@@ -466,10 +466,10 @@ export default function LawyerDashboard() {
           <div className="nav-left">
             <div className="nav-brand">
               <div className="nav-sigil">E</div>
-              <span className="nav-name">Erlangga Legal</span>
+              <span className="nav-name">Erlangga SCC</span>
             </div>
             <div className="nav-divider" />
-            <span className="nav-module">Legal Intelligence</span>
+            <span className="nav-module">Syariah Contract Compliance</span>
           </div>
           <div className="nav-right">
             <div className="nav-user">
@@ -516,7 +516,7 @@ export default function LawyerDashboard() {
             {/* Toolbar */}
             <div className="lw-toolbar">
               <div className="toolbar-left">
-                <div className="page-eyebrow">Lawyer Dashboard</div>
+                <div className="page-eyebrow">Syariah Contract Compliance — Review Panel</div>
                 <h1 className="page-title">
                   {filter === 'all' ? 'Semua Permintaan' :
                    filter === 'under_review' ? 'Perlu Review' :
@@ -593,7 +593,7 @@ export default function LawyerDashboard() {
                   </thead>
                   <tbody>
                     {filtered.map(r => (
-                      <tr key={r.id} onClick={() => router.push(`/lawyer/review?id=${r.id}`)}>
+                      <tr key={r.id} onClick={() => router.push(`/lawyer/${r.id}`)}>
                         <td>
                           <div className="td-req-no">{r.request_number || r.id.slice(0, 8).toUpperCase()}</div>
                         </td>
@@ -618,7 +618,7 @@ export default function LawyerDashboard() {
                         <td><span className="date-cell">{formatDate(r.created_at)}</span></td>
                         <td className="action-cell">
                           <button className="review-btn"
-                            onClick={e => { e.stopPropagation(); router.push(`/lawyer/review?id=${r.id}`); }}>
+                            onClick={e => { e.stopPropagation(); router.push(`/lawyer/${r.id}`); }}>
                             Review
                           </button>
                         </td>
