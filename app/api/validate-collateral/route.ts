@@ -43,7 +43,7 @@ const PROVIDERS = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${key}`,
       'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || '',
-      'X-Title': 'Erlangga Legal Intelligence',
+      'X-Title': 'Erlangga Syariah Contract Compliance',
     }),
     buildBody: (system: string, user: string) => ({
       model: 'anthropic/claude-sonnet-4',
@@ -152,7 +152,7 @@ REGULASI UTAMA YANG WAJIB DIRUJUK:
 1. OJK — Perbankan Syariah
    - POJK No.16/POJK.03/2023 (Prinsip kehati-hatian bank syariah)
    - POJK No.40/POJK.03/2019 (Penilaian kualitas aset bank umum)
-   - POJK No.31/POJK.05/2014 (Penyelenggaraan usaha pembiayaan syariah)
+   - POJK No.31/POJK.05/2014 (Penyelenggaraan usaha dan kepatuhan syariah)
    - POJK No.12/POJK.01/2017 (Penerapan program APU PPT — KYC)
    - SE OJK No.24/SEOJK.03/2021 (Penilaian kualitas aset)
 
