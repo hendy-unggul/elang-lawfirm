@@ -26,7 +26,7 @@ const PROVIDERS = {
   openrouter: {
     url: 'https://openrouter.ai/api/v1/chat/completions',
     apiKeyEnv: 'OPENROUTER_API_KEY',
-    buildHeaders: (k: string) => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${k}`, 'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || '', 'X-Title': 'Erlangga Legal Intelligence' }),
+    buildHeaders: (k: string) => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${k}`, 'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || '', 'X-Title': 'Erlangga Syariah Contract Compliance' }),
     buildBody: (sys: string, usr: string) => ({ model: 'anthropic/claude-sonnet-4', messages: [{ role: 'system', content: sys }, { role: 'user', content: usr }], temperature: 0.1, max_tokens: 6000, response_format: { type: 'json_object' } }),
     extractText: (d: any) => d.choices?.[0]?.message?.content || '',
   },
