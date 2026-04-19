@@ -340,50 +340,135 @@ export default function BranchPage() {
             </div>
           </div>
 
-          {/* ── BAGIAN 3: STRUKTUR PEMBIAYAAN (dinamis per akad) ── */}
+          {/* ── BAGIAN 3: STRUKTUR PEMBIAYAAN — dinamis penuh per akad ── */}
           <div className="section">
             <div className="section-lbl">Struktur pembiayaan</div>
 
-            <div className="grid3">
+            {/* Nilai pembiayaan + tenor — selalu ada */}
+            <div className="grid2">
               <div className="field">
                 <label>{akad?.amount_label || 'Nilai pembiayaan'} <span>*</span></label>
-                <input className={`inp ${errors.financing_amount ? 'inp-error' : ''}`}
-                  type="number" value={form.financing_amount}
-                  onChange={e => set('financing_amount', e.target.value)}
-                  placeholder="Contoh: 500000000" />
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'rgba(232,230,224,.3)', pointerEvents: 'none' }}>Rp</span>
+                  <input className={`inp ${errors.financing_amount ? 'inp-error' : ''}`}
+                    type="number" value={form.financing_amount}
+                    onChange={e => set('financing_amount', e.target.value)}
+                    placeholder="500000000"
+                    style={{ paddingLeft: 32 }} />
+                </div>
+                {form.financing_amount && (
+                  <div style={{ fontSize: 11, color: 'rgba(192,160,98,.5)', marginTop: 4 }}>
+                    Rp {Number(form.financing_amount).toLocaleString('id-ID')}
+                  </div>
+                )}
                 {errors.financing_amount && <div className="err-msg">{errors.financing_amount}</div>}
               </div>
               <div className="field">
-                <label>{akad?.rate_label || 'Rate (%)'} <span>*</span></label>
-                <input className={`inp ${errors.rate_value ? 'inp-error' : ''}`}
-                  type="number" step="0.1" value={form.rate_value}
-                  onChange={e => set('rate_value', e.target.value)}
-                  placeholder={akad?.rate_placeholder || '0'} />
-                {errors.rate_value && <div className="err-msg">{errors.rate_value}</div>}
-              </div>
-              <div className="field">
-                <label>Tenor (bulan) <span>*</span></label>
-                <input className={`inp ${errors.tenor_months ? 'inp-error' : ''}`}
-                  type="number" value={form.tenor_months}
-                  onChange={e => set('tenor_months', e.target.value)}
-                  placeholder="Contoh: 60" />
+                <label>Tenor <span>*</span></label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input className={`inp ${errors.tenor_months ? 'inp-error' : ''}`}
+                    type="number" value={form.tenor_months}
+                    onChange={e => set('tenor_months', e.target.value)}
+                    placeholder="60" style={{ flex: 1 }} />
+                  <span style={{ padding: '10px 14px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, fontSize: 12, color: 'rgba(232,230,224,.3)', whiteSpace: 'nowrap' }}>bulan</span>
+                </div>
                 {errors.tenor_months && <div className="err-msg">{errors.tenor_months}</div>}
               </div>
             </div>
 
-            {/* Field deskripsi barang — Murabahah, Salam, Istishna */}
+            {/* Rate field — label + satuan + helper berubah per akad */}
+            <div className="field-highlight">
+              <div className="fh-lbl">
+                {akad?.category === 'bagi_hasil' ? 'Nisbah bagi hasil'
+                  : akad?.category === 'sewa' ? 'Ujrah (biaya sewa)'
+                  : akad?.category === 'pinjaman' ? 'Biaya administrasi'
+                  : akad?.category === 'jasa' ? 'Fee / ujrah'
+                  : 'Margin keuntungan'}
+                {' '}— {akad?.name}
+              </div>
+              <div className="field" style={{ marginBottom: 0 }}>
+                <label>{akad?.rate_label || 'Rate'} <span>*</span></label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  {/* Prefix Rp untuk Ijarah/IMBT yang satuannya rupiah */}
+                  {akad?.requires_rental_rate && !akad?.requires_profit_share && (
+                    <span style={{ padding: '10px 14px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, fontSize: 12, color: 'rgba(232,230,224,.3)', whiteSpace: 'nowrap' }}>Rp</span>
+                  )}
+                  <input className={`inp ${errors.rate_value ? 'inp-error' : ''}`}
+                    type="number" step="0.01" value={form.rate_value}
+                    onChange={e => set('rate_value', e.target.value)}
+                    placeholder={akad?.rate_placeholder || '0'}
+                    style={{ flex: 1 }} />
+                  {/* Suffix % untuk akad berbasis persentase */}
+                  {!akad?.requires_rental_rate && (
+                    <span style={{ padding: '10px 14px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, fontSize: 12, color: 'rgba(232,230,224,.3)' }}>%</span>
+                  )}
+                  {/* Suffix /bulan untuk Ijarah */}
+                  {akad?.requires_rental_rate && !akad?.requires_profit_share && (
+                    <span style={{ padding: '10px 14px', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 3, fontSize: 12, color: 'rgba(232,230,224,.3)', whiteSpace: 'nowrap' }}>/bln</span>
+                  )}
+                </div>
+                {errors.rate_value && <div className="err-msg">{errors.rate_value}</div>}
+
+                {/* Helper text kontekstual per akad */}
+                <div style={{ fontSize: 11, color: 'rgba(232,230,224,.25)', marginTop: 6, lineHeight: 1.6 }}>
+                  {form.contract_type === 'murabahah' && 'Margin flat atas harga pokok. Harga jual = pokok + (pokok × margin%).'}
+                  {form.contract_type === 'salam' && 'Selisih antara harga beli bank dengan harga pasar saat penyerahan.'}
+                  {form.contract_type === 'istishna' && 'Persentase keuntungan bank atas biaya produksi total.'}
+                  {form.contract_type === 'mudharabah' && `Contoh: isi 60 → nasabah dapat 60%, bank 40%. Total harus 100%.`}
+                  {form.contract_type === 'musyarakah' && `Nisbah keuntungan untuk bank. Sisa (${form.rate_value ? 100 - Number(form.rate_value) : '...'}%) untuk nasabah.`}
+                  {form.contract_type === 'musyarakah_mutanaqisah' && 'Nisbah bagi hasil dari sewa aset. Porsi kepemilikan bank berkurang tiap cicilan.'}
+                  {form.contract_type === 'ijarah' && 'Ujrah tetap per bulan selama masa sewa. Bukan bunga — ini biaya manfaat aset.'}
+                  {form.contract_type === 'imbt' && 'Ujrah sewa bulanan. Di akhir masa sewa, aset dapat dialihkan ke nasabah.'}
+                  {form.contract_type === 'wakalah' && 'Fee atas jasa wakalah. Harus mencerminkan biaya riil yang dikeluarkan bank.'}
+                  {form.contract_type === 'qardh' && 'Hanya biaya administrasi riil. Bank dilarang mengambil keuntungan dari Qardh.'}
+                </div>
+
+                {/* Preview simulasi angsuran untuk akad berbasis % */}
+                {form.rate_value && form.financing_amount && form.tenor_months &&
+                  akad?.requires_margin && (
+                  <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(192,160,98,.06)', borderRadius: 2, fontSize: 11, color: 'rgba(192,160,98,.6)' }}>
+                    Estimasi angsuran: Rp {Math.round(
+                      (Number(form.financing_amount) * (1 + Number(form.rate_value) / 100)) / Number(form.tenor_months)
+                    ).toLocaleString('id-ID')} / bulan
+                    {' '}· Total harga jual: Rp {Math.round(
+                      Number(form.financing_amount) * (1 + Number(form.rate_value) / 100)
+                    ).toLocaleString('id-ID')}
+                  </div>
+                )}
+
+                {/* Preview nisbah untuk bagi hasil */}
+                {form.rate_value && akad?.requires_profit_share && (
+                  <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(192,160,98,.06)', borderRadius: 2, fontSize: 11, color: 'rgba(192,160,98,.6)' }}>
+                    {form.contract_type === 'mudharabah' || form.contract_type === 'musyarakah'
+                      ? `Nisbah: Nasabah ${form.contract_type === 'mudharabah' ? Number(form.rate_value) : 100 - Number(form.rate_value)}% · Bank ${form.contract_type === 'mudharabah' ? 100 - Number(form.rate_value) : Number(form.rate_value)}%`
+                      : `Nisbah bank: ${form.rate_value}%`}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Field deskripsi barang — Murabahah, Salam, Istishna, Ijarah, IMBT */}
             {akad?.requires_goods_desc && (
               <div className="field-highlight">
-                <div className="fh-lbl">Deskripsi objek / barang ({akad.name})</div>
-                <div className="field">
-                  <label>Spesifikasi barang/objek yang dibiayai <span>*</span></label>
+                <div className="fh-lbl">
+                  {form.contract_type === 'murabahah' ? 'Objek yang dibeli (wajib — Fatwa DSN No.04)'
+                    : form.contract_type === 'salam' ? 'Spesifikasi barang pesanan (wajib — Fatwa DSN No.05)'
+                    : form.contract_type === 'istishna' ? 'Spesifikasi teknis objek (wajib — Fatwa DSN No.06)'
+                    : 'Deskripsi objek sewa (wajib — Fatwa DSN No.09)'}
+                </div>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label>Deskripsi lengkap barang / objek <span>*</span></label>
                   <textarea className={`inp ${errors.goods_description ? 'inp-error' : ''}`}
                     rows={3} value={form.goods_description}
                     onChange={e => set('goods_description', e.target.value)}
                     placeholder={
-                      form.contract_type === 'murabahah' ? 'Contoh: Rumah 2 lantai LT 120m², LB 90m², Jl. Merdeka No.5 Bandung'
-                      : form.contract_type === 'salam' ? 'Contoh: Padi varietas IR64, 50 ton, kadar air maks 14%, panen November 2025'
-                      : 'Contoh: Gedung kantor 3 lantai, luas 400m², spesifikasi terlampir'
+                      form.contract_type === 'murabahah'
+                        ? 'Contoh: Rumah tinggal 2 lantai, LT 120m², LB 90m², 3 kamar tidur, lokasi Jl. Merdeka No.5 Bandung'
+                        : form.contract_type === 'salam'
+                        ? 'Contoh: Padi varietas IR64, 50 ton, kadar air maks 14%, gabah kering giling, diserahkan November 2025'
+                        : form.contract_type === 'istishna'
+                        ? 'Contoh: Gedung kantor 3 lantai, luas per lantai 150m², struktur beton, spesifikasi teknis terlampir'
+                        : 'Contoh: Excavator Komatsu PC200, tahun 2020, kapasitas bucket 0.8m³, kondisi baik'
                     }
                     style={{ resize: 'vertical', minHeight: 70 }}
                   />
@@ -392,19 +477,33 @@ export default function BranchPage() {
               </div>
             )}
 
-            {/* Field deskripsi proyek/usaha — Mudharabah, Musyarakah, Istishna */}
+            {/* Field deskripsi proyek/usaha — Mudharabah, Musyarakah, MMQ, Istishna */}
             {akad?.requires_project_desc && (
               <div className="field-highlight">
-                <div className="fh-lbl">Deskripsi proyek / usaha ({akad.name})</div>
-                <div className="field">
-                  <label>Gambaran usaha yang akan dijalankan <span>*</span></label>
+                <div className="fh-lbl">
+                  {form.contract_type === 'mudharabah' ? 'Deskripsi usaha nasabah (wajib — Fatwa DSN No.07)'
+                    : form.contract_type === 'musyarakah' || form.contract_type === 'musyarakah_mutanaqisah'
+                    ? 'Deskripsi usaha bersama (wajib — Fatwa DSN No.08)'
+                    : 'Deskripsi proyek yang dipesan (wajib — Fatwa DSN No.06)'}
+                </div>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label>
+                    {form.contract_type === 'mudharabah' ? 'Gambaran usaha yang dikelola nasabah'
+                      : form.contract_type.startsWith('musyarakah') ? 'Gambaran usaha / proyek bersama'
+                      : 'Deskripsi proyek / konstruksi'}
+                    {' '}<span>*</span>
+                  </label>
                   <textarea className={`inp ${errors.project_description ? 'inp-error' : ''}`}
                     rows={3} value={form.project_description}
                     onChange={e => set('project_description', e.target.value)}
                     placeholder={
-                      form.contract_type === 'mudharabah' ? 'Contoh: Usaha perdagangan sembako, omset Rp50jt/bulan, sudah berjalan 3 tahun'
-                      : form.contract_type === 'musyarakah' ? 'Contoh: Pengembangan usaha konveksi, kapasitas 5000 pcs/bulan'
-                      : 'Contoh: Pembangunan ruko 5 unit, lokasi strategis di kawasan bisnis'
+                      form.contract_type === 'mudharabah'
+                        ? 'Contoh: Usaha perdagangan sembako, omset Rp50jt/bulan, sudah berjalan 3 tahun, memiliki 2 karyawan tetap'
+                        : form.contract_type === 'musyarakah'
+                        ? 'Contoh: Pengembangan usaha konveksi seragam, kapasitas 5.000 pcs/bulan, kontrak dengan 3 instansi pemerintah'
+                        : form.contract_type === 'musyarakah_mutanaqisah'
+                        ? 'Contoh: Kepemilikan ruko untuk usaha retail, lokasi pusat kota, sewa saat ini Rp8jt/bulan'
+                        : 'Contoh: Pembangunan 5 unit ruko 3 lantai, lahan sudah dimiliki nasabah, IMB dalam proses'
                     }
                     style={{ resize: 'vertical', minHeight: 70 }}
                   />
