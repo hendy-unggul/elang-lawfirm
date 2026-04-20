@@ -284,7 +284,6 @@ export default function BranchPage() {
 
   return (
     <NotificationProvider branchId={branchId}>
-    <>
       <style>{S}</style>
       <div className="bp">
         <nav className="bp-nav">
@@ -698,7 +697,6 @@ export default function BranchPage() {
 
       {toast && <div className="toast">{toast}</div>}
       <StatusToastContainer />
-    </>
     </NotificationProvider>
   );
 }
