@@ -82,7 +82,7 @@ const S = `
 @media(max-width:640px){.grid2,.grid3{grid-template-columns:1fr}.bp-body{padding:24px 16px 60px}.bp-nav{padding:0 16px}}
 `;
 
-// ── TYPES ────────────────────────────────────────────────────
+// -- TYPES ----------------------------------------------------
 interface FormData {
   customer_name: string;
   customer_id_number: string;
@@ -117,8 +117,8 @@ const INITIAL: FormData = {
 };
 
 const COLLATERAL_LABELS: Record<string, string> = {
-  tanah_shm: 'Tanah — Sertifikat Hak Milik (SHM)',
-  tanah_shgb: 'Tanah — Sertifikat Hak Guna Bangunan (SHGB)',
+  tanah_shm: 'Tanah -- Sertifikat Hak Milik (SHM)',
+  tanah_shgb: 'Tanah -- Sertifikat Hak Guna Bangunan (SHGB)',
   bangunan: 'Bangunan / Rumah / Ruko',
   kendaraan_roda4: 'Kendaraan Roda Empat',
 };
@@ -274,7 +274,7 @@ export default function BranchPage() {
       });
     } catch { /* pipeline akan retry */ }
 
-    showToast('Pengajuan terkirim, AI sedang menganalisa…');
+    showToast('Pengajuan terkirim, AI sedang menganalisa...');
     setTimeout(() => router.push(`/branch/status?id=${data.id}`), 1200);
   };
 
@@ -288,7 +288,7 @@ export default function BranchPage() {
         <nav className="bp-nav">
           <div className="nav-left">
             <div className="nav-sigil">E</div>
-            <span className="nav-title">Erlangga SCC — Pengajuan Akad</span>
+            <span className="nav-title">Erlangga SCC -- Pengajuan Akad</span>
           </div>
           <div className="nav-right">
             <NotificationBell />
@@ -301,7 +301,7 @@ export default function BranchPage() {
           <div className="page-eyebrow">Syariah Contract Compliance</div>
           <div className="page-title">Form Pengajuan Review Akad Syariah</div>
 
-          {/* ── BAGIAN 1: JENIS AKAD ── */}
+          {/* -- BAGIAN 1: JENIS AKAD -- */}
           <div className="section">
             <div className="section-lbl">Jenis akad pembiayaan</div>
 
@@ -309,9 +309,9 @@ export default function BranchPage() {
               <label>Pilih akad <span>*</span></label>
               <select className="sel" value={form.contract_type} onChange={e => setAkad(e.target.value)}>
                 {Object.entries(akadByCategory).map(([cat, list]) => (
-                  <optgroup key={cat} label={`── ${CATEGORY_LABELS[cat] || cat}`}>
+                  <optgroup key={cat} label={`-- ${CATEGORY_LABELS[cat] || cat}`}>
                     {list.map(a => (
-                      <option key={a.code} value={a.code}>{a.name} — {a.arabic}</option>
+                      <option key={a.code} value={a.code}>{a.name} -- {a.arabic}</option>
                     ))}
                   </optgroup>
                 ))}
@@ -325,7 +325,7 @@ export default function BranchPage() {
                   <div className="akad-name">{akad.name}</div>
                   <div className="akad-arabic">{akad.arabic}</div>
                 </div>
-                <div className="akad-fatwa">{akad.fatwa_dsn.join(' · ')}</div>
+                <div className="akad-fatwa">{akad.fatwa_dsn.join(' . ')}</div>
                 <div className="akad-desc">{akad.description}</div>
                 <div className="akad-uses">
                   {akad.use_cases.map((u, i) => <span key={i} className="akad-use">{u}</span>)}
@@ -333,14 +333,14 @@ export default function BranchPage() {
                 {akad.warnings.length > 0 && (
                   <div className="akad-warning">
                     <div className="akad-warning-lbl">Perhatian</div>
-                    {akad.warnings.map((w, i) => <div key={i}>· {w}</div>)}
+                    {akad.warnings.map((w, i) => <div key={i}>. {w}</div>)}
                   </div>
                 )}
               </div>
             )}
           </div>
 
-          {/* ── BAGIAN 2: DATA NASABAH ── */}
+          {/* -- BAGIAN 2: DATA NASABAH -- */}
           <div className="section">
             <div className="section-lbl">Data nasabah</div>
             <div className="grid2">
@@ -361,11 +361,11 @@ export default function BranchPage() {
             </div>
           </div>
 
-          {/* ── BAGIAN 3: STRUKTUR PEMBIAYAAN — dinamis penuh per akad ── */}
+          {/* -- BAGIAN 3: STRUKTUR PEMBIAYAAN -- dinamis penuh per akad -- */}
           <div className="section">
             <div className="section-lbl">Struktur pembiayaan</div>
 
-            {/* Nilai pembiayaan + tenor — selalu ada */}
+            {/* Nilai pembiayaan + tenor -- selalu ada */}
             <div className="grid2">
               <div className="field">
                 <label>{akad?.amount_label || 'Nilai pembiayaan'} <span>*</span></label>
@@ -397,7 +397,7 @@ export default function BranchPage() {
               </div>
             </div>
 
-            {/* Rate field — label + satuan + helper berubah per akad */}
+            {/* Rate field -- label + satuan + helper berubah per akad */}
             <div className="field-highlight">
               <div className="fh-lbl">
                 {akad?.category === 'bagi_hasil' ? 'Nisbah bagi hasil'
@@ -405,7 +405,7 @@ export default function BranchPage() {
                   : akad?.category === 'pinjaman' ? 'Biaya administrasi'
                   : akad?.category === 'jasa' ? 'Fee / ujrah'
                   : 'Margin keuntungan'}
-                {' '}— {akad?.name}
+                {' '}-- {akad?.name}
               </div>
               <div className="field" style={{ marginBottom: 0 }}>
                 <label>{akad?.rate_label || 'Rate'} <span>*</span></label>
@@ -432,50 +432,50 @@ export default function BranchPage() {
 
                 {/* Helper text kontekstual per akad */}
                 <div style={{ fontSize: 11, color: 'rgba(232,230,224,.25)', marginTop: 6, lineHeight: 1.6 }}>
-                  {form.contract_type === 'murabahah' && 'Margin flat atas harga pokok. Harga jual = pokok + (pokok × margin%).'}
+                  {form.contract_type === 'murabahah' && 'Margin flat atas harga pokok. Harga jual = pokok + (pokok x margin%).'}
                   {form.contract_type === 'salam' && 'Selisih antara harga beli bank dengan harga pasar saat penyerahan.'}
                   {form.contract_type === 'istishna' && 'Persentase keuntungan bank atas biaya produksi total.'}
-                  {form.contract_type === 'mudharabah' && `Contoh: isi 60 → nasabah dapat 60%, bank 40%. Total harus 100%.`}
+                  {form.contract_type === 'mudharabah' && `Contoh: isi 60 -> nasabah dapat 60%, bank 40%. Total harus 100%.`}
                   {form.contract_type === 'musyarakah' && `Nisbah keuntungan untuk bank. Sisa (${form.rate_value ? 100 - Number(form.rate_value) : '...'}%) untuk nasabah.`}
                   {form.contract_type === 'musyarakah_mutanaqisah' && 'Nisbah bagi hasil dari sewa aset. Porsi kepemilikan bank berkurang tiap cicilan.'}
-                  {form.contract_type === 'ijarah' && 'Ujrah tetap per bulan selama masa sewa. Bukan bunga — ini biaya manfaat aset.'}
+                  {form.contract_type === 'ijarah' && 'Ujrah tetap per bulan selama masa sewa. Bukan bunga -- ini biaya manfaat aset.'}
                   {form.contract_type === 'imbt' && 'Ujrah sewa bulanan. Di akhir masa sewa, aset dapat dialihkan ke nasabah.'}
                   {form.contract_type === 'wakalah' && 'Fee atas jasa wakalah. Harus mencerminkan biaya riil yang dikeluarkan bank.'}
                   {form.contract_type === 'qardh' && 'Hanya biaya administrasi riil. Bank dilarang mengambil keuntungan dari Qardh.'}
                 </div>
 
-                {/* Preview simulasi angsuran — client only, mounted guard */}
+                {/* Preview simulasi angsuran -- client only, mounted guard */}
                 {mounted && form.rate_value && form.financing_amount && form.tenor_months &&
                   akad?.requires_margin && (
                   <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(192,160,98,.06)', borderRadius: 2, fontSize: 11, color: 'rgba(192,160,98,.6)' }}>
                     Estimasi angsuran: Rp {Math.round(
                       (Number(form.financing_amount) * (1 + Number(form.rate_value) / 100)) / Number(form.tenor_months)
                     ))} / bulan
-                    {' '}· Total harga jual: Rp {Math.round(
+                    {' '}. Total harga jual: Rp {Math.round(
                       Number(form.financing_amount) * (1 + Number(form.rate_value) / 100)
                     ))}
                   </div>
                 )}
 
-                {/* Preview nisbah — client only */}
+                {/* Preview nisbah -- client only */}
                 {mounted && form.rate_value && akad?.requires_profit_share && (
                   <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(192,160,98,.06)', borderRadius: 2, fontSize: 11, color: 'rgba(192,160,98,.6)' }}>
                     {form.contract_type === 'mudharabah' || form.contract_type === 'musyarakah'
-                      ? `Nisbah: Nasabah ${form.contract_type === 'mudharabah' ? Number(form.rate_value) : 100 - Number(form.rate_value)}% · Bank ${form.contract_type === 'mudharabah' ? 100 - Number(form.rate_value) : Number(form.rate_value)}%`
+                      ? `Nisbah: Nasabah ${form.contract_type === 'mudharabah' ? Number(form.rate_value) : 100 - Number(form.rate_value)}% . Bank ${form.contract_type === 'mudharabah' ? 100 - Number(form.rate_value) : Number(form.rate_value)}%`
                       : `Nisbah bank: ${form.rate_value}%`}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Field deskripsi barang — Murabahah, Salam, Istishna, Ijarah, IMBT */}
+            {/* Field deskripsi barang -- Murabahah, Salam, Istishna, Ijarah, IMBT */}
             {akad?.requires_goods_desc && (
               <div className="field-highlight">
                 <div className="fh-lbl">
-                  {form.contract_type === 'murabahah' ? 'Objek yang dibeli (wajib — Fatwa DSN No.04)'
-                    : form.contract_type === 'salam' ? 'Spesifikasi barang pesanan (wajib — Fatwa DSN No.05)'
-                    : form.contract_type === 'istishna' ? 'Spesifikasi teknis objek (wajib — Fatwa DSN No.06)'
-                    : 'Deskripsi objek sewa (wajib — Fatwa DSN No.09)'}
+                  {form.contract_type === 'murabahah' ? 'Objek yang dibeli (wajib -- Fatwa DSN No.04)'
+                    : form.contract_type === 'salam' ? 'Spesifikasi barang pesanan (wajib -- Fatwa DSN No.05)'
+                    : form.contract_type === 'istishna' ? 'Spesifikasi teknis objek (wajib -- Fatwa DSN No.06)'
+                    : 'Deskripsi objek sewa (wajib -- Fatwa DSN No.09)'}
                 </div>
                 <div className="field" style={{ marginBottom: 0 }}>
                   <label>Deskripsi lengkap barang / objek <span>*</span></label>
@@ -484,12 +484,12 @@ export default function BranchPage() {
                     onChange={e => set('goods_description', e.target.value)}
                     placeholder={
                       form.contract_type === 'murabahah'
-                        ? 'Contoh: Rumah tinggal 2 lantai, LT 120m², LB 90m², 3 kamar tidur, lokasi Jl. Merdeka No.5 Bandung'
+                        ? 'Contoh: Rumah tinggal 2 lantai, LT 120m2, LB 90m2, 3 kamar tidur, lokasi Jl. Merdeka No.5 Bandung'
                         : form.contract_type === 'salam'
                         ? 'Contoh: Padi varietas IR64, 50 ton, kadar air maks 14%, gabah kering giling, diserahkan November 2025'
                         : form.contract_type === 'istishna'
-                        ? 'Contoh: Gedung kantor 3 lantai, luas per lantai 150m², struktur beton, spesifikasi teknis terlampir'
-                        : 'Contoh: Excavator Komatsu PC200, tahun 2020, kapasitas bucket 0.8m³, kondisi baik'
+                        ? 'Contoh: Gedung kantor 3 lantai, luas per lantai 150m2, struktur beton, spesifikasi teknis terlampir'
+                        : 'Contoh: Excavator Komatsu PC200, tahun 2020, kapasitas bucket 0.8m3, kondisi baik'
                     }
                     style={{ resize: 'vertical', minHeight: 70 }}
                   />
@@ -498,14 +498,14 @@ export default function BranchPage() {
               </div>
             )}
 
-            {/* Field deskripsi proyek/usaha — Mudharabah, Musyarakah, MMQ, Istishna */}
+            {/* Field deskripsi proyek/usaha -- Mudharabah, Musyarakah, MMQ, Istishna */}
             {akad?.requires_project_desc && (
               <div className="field-highlight">
                 <div className="fh-lbl">
-                  {form.contract_type === 'mudharabah' ? 'Deskripsi usaha nasabah (wajib — Fatwa DSN No.07)'
+                  {form.contract_type === 'mudharabah' ? 'Deskripsi usaha nasabah (wajib -- Fatwa DSN No.07)'
                     : form.contract_type === 'musyarakah' || form.contract_type === 'musyarakah_mutanaqisah'
-                    ? 'Deskripsi usaha bersama (wajib — Fatwa DSN No.08)'
-                    : 'Deskripsi proyek yang dipesan (wajib — Fatwa DSN No.06)'}
+                    ? 'Deskripsi usaha bersama (wajib -- Fatwa DSN No.08)'
+                    : 'Deskripsi proyek yang dipesan (wajib -- Fatwa DSN No.06)'}
                 </div>
                 <div className="field" style={{ marginBottom: 0 }}>
                   <label>
@@ -534,7 +534,7 @@ export default function BranchPage() {
             )}
           </div>
 
-          {/* ── BAGIAN 4: DATA JAMINAN ── */}
+          {/* -- BAGIAN 4: DATA JAMINAN -- */}
           <div className="section">
             <div className="section-lbl">Data jaminan</div>
 
@@ -579,7 +579,7 @@ export default function BranchPage() {
                     {errors.certificate_number && <div className="err-msg">{errors.certificate_number}</div>}
                   </div>
                   <div className="field">
-                    <label>Luas (m²)</label>
+                    <label>Luas (m2)</label>
                     <input className="inp" type="number" value={form.area_m2}
                       onChange={e => set('area_m2', e.target.value)} placeholder="Contoh: 120" />
                   </div>
@@ -627,7 +627,7 @@ export default function BranchPage() {
                 </div>
                 {!form.stnk_active && (
                   <div className="akad-warning">
-                    <div className="akad-warning-lbl">Perhatian — STNK kadaluarsa</div>
+                    <div className="akad-warning-lbl">Perhatian -- STNK kadaluarsa</div>
                     AI akan mendeteksi kondisi ini dan memberikan jalur solusi perpanjangan dalam analisa.
                   </div>
                 )}
@@ -637,7 +637,7 @@ export default function BranchPage() {
             {/* Kondisi harta bersama */}
             {form.ownership_status === 'harta_bersama' && (
               <div className="field-highlight">
-                <div className="fh-lbl">Konfirmasi harta bersama — UU No.1/1974 Ps.36</div>
+                <div className="fh-lbl">Konfirmasi harta bersama -- UU No.1/1974 Ps.36</div>
                 <div className="check-row" onClick={() => set('spouse_consent', !form.spouse_consent)}>
                   <div className={`check-box ${form.spouse_consent ? 'checked' : ''}`}>
                     {form.spouse_consent && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#c0a062" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
@@ -651,7 +651,7 @@ export default function BranchPage() {
             {/* Kondisi warisan */}
             {form.ownership_status === 'warisan_belum_dibagi' && (
               <div className="field-highlight">
-                <div className="fh-lbl">Konfirmasi status warisan — KHI Ps.171</div>
+                <div className="fh-lbl">Konfirmasi status warisan -- KHI Ps.171</div>
                 <div className="check-row" onClick={() => set('heirs_involved', !form.heirs_involved)}>
                   <div className={`check-box ${form.heirs_involved ? 'checked' : ''}`}>
                     {form.heirs_involved && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#c0a062" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
@@ -668,7 +668,7 @@ export default function BranchPage() {
             )}
           </div>
 
-          {/* ── BAGIAN 5: CATATAN ── */}
+          {/* -- BAGIAN 5: CATATAN -- */}
           <div className="section">
             <div className="section-lbl">Catatan tambahan</div>
             <div className="field">
@@ -680,15 +680,15 @@ export default function BranchPage() {
             </div>
           </div>
 
-          {/* ── SUBMIT ── */}
+          {/* -- SUBMIT -- */}
           <div className="submit-area">
             <div className="submit-note">
               Setelah dikirim, AI akan menganalisa data dalam beberapa menit. Pantau status di halaman riwayat pengajuan.
-              Pastikan semua data sudah benar — perubahan setelah pengiriman memerlukan pengajuan ulang.
+              Pastikan semua data sudah benar -- perubahan setelah pengiriman memerlukan pengajuan ulang.
             </div>
             <button className="btn-submit" onClick={handleSubmit} disabled={submitting}>
               {submitting ? <span className="spinner" /> : null}
-              {submitting ? 'Mengirim untuk review…' : 'Kirim untuk review compliance'}
+              {submitting ? 'Mengirim untuk review...' : 'Kirim untuk review compliance'}
             </button>
           </div>
         </div>
