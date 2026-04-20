@@ -1,11 +1,5 @@
 'use client';
 
-// Format angka konsisten server+client — tidak pakai toLocaleString
-function fmtRp(n: number): string {
-  if (!n || isNaN(n)) return '0';
-  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
@@ -13,9 +7,14 @@ import {
   AKAD_LIST, AKAD_BY_CODE, CATEGORY_LABELS,
   getAkadByCategory, type AkadDefinition
 } from '@/lib/akad-system';
-import { NotificationProvider, NotificationBell, StatusToastContainer } from '@/lib/notification-system';
+import { NotificationBell, StatusToastContainer } from '@/lib/notification-system';
 
-// ── STYLES ──────────────────────────────────────────────────
+// Format angka konsisten server+client (tidak pakai toLocaleString)
+function fmtRp(n: number): string {
+  if (!n || isNaN(n)) return '0';
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 const S = `
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 .bp{min-height:100vh;background:#0c0d0f;font-family:'DM Sans',sans-serif;color:#e8e6e0}
@@ -283,7 +282,7 @@ export default function BranchPage() {
   const isVehicle = form.collateral_type === 'kendaraan_roda4';
 
   return (
-    <NotificationProvider branchId={branchId}>
+    <>
       <style>{S}</style>
       <div className="bp">
         <nav className="bp-nav">
@@ -697,6 +696,6 @@ export default function BranchPage() {
 
       {toast && <div className="toast">{toast}</div>}
       <StatusToastContainer />
-    </NotificationProvider>
+    </>
   );
 }
