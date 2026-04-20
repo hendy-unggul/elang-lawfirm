@@ -1,4 +1,11 @@
 'use client';
+
+// Format angka konsisten server+client — tidak pakai toLocaleString
+function fmtRp(n: number): string {
+  if (!n || isNaN(n)) return '0';
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
@@ -132,6 +139,8 @@ export default function BranchPage() {
   const [toast, setToast] = useState('');
   const [user, setUser] = useState<any>(null);
   const [branchId, setBranchId] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const akad = AKAD_BY_CODE[form.contract_type] as AkadDefinition | undefined;
   const akadByCategory = getAkadByCategory();
@@ -215,10 +224,15 @@ export default function BranchPage() {
     }
 
     // Simpan rate dengan key yang sesuai akad
-    const rateKey = akad?.requires_margin ? 'margin_percent'
-      : akad?.requires_profit_share ? 'profit_share_percent'
-      : akad?.requires_rental_rate ? 'rental_rate'
-      : 'rate_percent';
+    // Simpan rate ke margin_percent (kolom yang sudah ada) + metadata akad
+    const akadMeta = {
+      rate_type: akad?.requires_margin ? 'margin'
+        : akad?.requires_profit_share ? 'profit_share'
+        : akad?.requires_rental_rate ? 'rental'
+        : 'fee',
+      rate_value: Number(form.rate_value),
+      rate_label: akad?.rate_label || 'Rate',
+    };
 
     const payload: Record<string, any> = {
       branch_id: branchId,
@@ -226,15 +240,22 @@ export default function BranchPage() {
       customer_name: form.customer_name.trim(),
       customer_id_number: form.customer_id_number.trim(),
       financing_amount: Number(form.financing_amount),
-      [rateKey]: Number(form.rate_value),
-      margin_percent: Number(form.rate_value), // backward compat
+      margin_percent: Number(form.rate_value),
       tenor_months: Number(form.tenor_months),
-      collateral: { type: form.collateral_type, details: collateralDetails },
+      collateral: { type: form.collateral_type, details: { ...collateralDetails, akad_meta: akadMeta } },
       status: 'collateral_validation',
     };
 
-    if (form.goods_description) payload.goods_description = form.goods_description;
-    if (form.project_description) payload.project_description = form.project_description;
+    // Simpan ke collateral.details sebagai fallback jika kolom belum ada
+    // Setelah migration-columns.sql dijalankan, bisa dipindah ke top-level
+    if (form.goods_description) {
+      collateralDetails.goods_description = form.goods_description;
+      try { payload.goods_description = form.goods_description; } catch {}
+    }
+    if (form.project_description) {
+      collateralDetails.project_description = form.project_description;
+      try { payload.project_description = form.project_description; } catch {}
+    }
 
     const { data, error } = await supabase.from('contract_requests').insert(payload).select('id').single();
 
@@ -360,7 +381,7 @@ export default function BranchPage() {
                 </div>
                 {form.financing_amount && (
                   <div style={{ fontSize: 11, color: 'rgba(192,160,98,.5)', marginTop: 4 }}>
-                    Rp {Number(form.financing_amount).toLocaleString('id-ID')}
+                    Rp {fmtRp(Number(form.financing_amount))}
                   </div>
                 )}
                 {errors.financing_amount && <div className="err-msg">{errors.financing_amount}</div>}
@@ -425,21 +446,21 @@ export default function BranchPage() {
                   {form.contract_type === 'qardh' && 'Hanya biaya administrasi riil. Bank dilarang mengambil keuntungan dari Qardh.'}
                 </div>
 
-                {/* Preview simulasi angsuran untuk akad berbasis % */}
-                {form.rate_value && form.financing_amount && form.tenor_months &&
+                {/* Preview simulasi angsuran — client only, mounted guard */}
+                {mounted && form.rate_value && form.financing_amount && form.tenor_months &&
                   akad?.requires_margin && (
                   <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(192,160,98,.06)', borderRadius: 2, fontSize: 11, color: 'rgba(192,160,98,.6)' }}>
                     Estimasi angsuran: Rp {Math.round(
                       (Number(form.financing_amount) * (1 + Number(form.rate_value) / 100)) / Number(form.tenor_months)
-                    ).toLocaleString('id-ID')} / bulan
+                    ))} / bulan
                     {' '}· Total harga jual: Rp {Math.round(
                       Number(form.financing_amount) * (1 + Number(form.rate_value) / 100)
-                    ).toLocaleString('id-ID')}
+                    ))}
                   </div>
                 )}
 
-                {/* Preview nisbah untuk bagi hasil */}
-                {form.rate_value && akad?.requires_profit_share && (
+                {/* Preview nisbah — client only */}
+                {mounted && form.rate_value && akad?.requires_profit_share && (
                   <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(192,160,98,.06)', borderRadius: 2, fontSize: 11, color: 'rgba(192,160,98,.6)' }}>
                     {form.contract_type === 'mudharabah' || form.contract_type === 'musyarakah'
                       ? `Nisbah: Nasabah ${form.contract_type === 'mudharabah' ? Number(form.rate_value) : 100 - Number(form.rate_value)}% · Bank ${form.contract_type === 'mudharabah' ? 100 - Number(form.rate_value) : Number(form.rate_value)}%`
