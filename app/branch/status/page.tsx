@@ -7,7 +7,6 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { NotificationProvider, NotificationBell, StatusToastContainer } from '@/lib/notification-system';
 
 const STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap');
 *, *::before, *::after { box-sizing: border-box; }
 
 .st-root { min-height: 100vh; background: #f5f3ef; font-family: 'DM Sans', sans-serif; color: #1a1a1a; }
