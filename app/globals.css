@@ -1,3 +1,17 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Font family mapping dari Next.js font variables ke nama yang dipakai komponen */
+:root {
+  --font-playfair: var(--font-playfair, 'Playfair Display', serif);
+  --font-dm-sans: var(--font-dm-sans, 'DM Sans', sans-serif);
+  --font-dm-mono: var(--font-dm-mono, 'DM Mono', monospace);
+}
+
+/* Komponen menggunakan nama font string langsung, jadi mapping di sini */
+* {
+  box-sizing: border-box;
+}
+
+/* Pastikan font family tersedia secara global */
+.font-playfair,
+[class*="Playfair"] {
+  font-family: var(--font-playfair), 'Playfair Display', serif;
+}
