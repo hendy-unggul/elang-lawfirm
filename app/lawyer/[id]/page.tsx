@@ -5,7 +5,6 @@ import { supabase } from '@/lib/supabaseClient';
 import { useParams, useRouter } from 'next/navigation';
 
 const S = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 .rv{min-height:100vh;background:#0c0d0f;font-family:'DM Sans',sans-serif;color:#e8e6e0}
 .rv-nav{height:56px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;padding:0 40px;position:sticky;top:0;z-index:100;background:#0c0d0f}
