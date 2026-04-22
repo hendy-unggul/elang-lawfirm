@@ -41,7 +41,7 @@ export default function LandingPage() {
       <style>{S}</style>
       <div className="lp">
         <div className="lp-sigil">E</div>
-        <div className="lp-label">Erlangga Syariah Contract Compliance</div>
+        <div className="lp-label">Syarikat Islam - DSN</div>
         <h1 className="lp-title">
           Compliance syariah untuk setiap <em>akad</em> sebelum kontrak ditandatangani
         </h1>
@@ -66,7 +66,7 @@ export default function LandingPage() {
         </div>
 
         <div className="lp-footer">
-          Akses terbatas — hanya untuk personel yang telah mendapat otorisasi Erlangga
+          Akses terbatas — hanya untuk personel yang telah mendapat otorisasi Syarikat Islam - DSN
         </div>
       </div>
     </>
