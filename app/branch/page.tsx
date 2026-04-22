@@ -288,7 +288,7 @@ export default function BranchPage() {
         <nav className="bp-nav">
           <div className="nav-left">
             <div className="nav-sigil">E</div>
-            <span className="nav-title">Erlangga SCC -- Pengajuan Akad</span>
+            <span className="nav-title">Syarikat Islam - DSN</span>
           </div>
           <div className="nav-right">
             <NotificationBell />
