@@ -349,7 +349,7 @@ function StatusContent() {
         <nav className="st-nav">
           <div className="nav-brand">
             <div className="nav-sigil">E</div>
-            <span className="nav-name">Erlangga SCC</span>
+            <span className="nav-name">Syarikat Islam - DSN</span>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <NotificationBell />
