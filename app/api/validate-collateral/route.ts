@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const PROVIDER: 'deepseek' | 'claude' | 'openrouter' = 'deepseek';
+// ============================================================
+// TWIN ENGINE -- Stage 2-3 menggunakan Claude Sonnet
+// Claude Sonnet: legal reasoning mendalam, akurasi tinggi
+//   untuk analisa fatwa DSN-MUI, POJK, dan hukum jaminan.
+//   Stage ini butuh nuance hukum yang hanya Claude miliki.
+// DeepSeek: digunakan di Stage 1b (data-intelligence route)
+// ============================================================
+const STAGE23_ENGINE: 'deepseek' | 'claude' | 'openrouter' = 'claude';
+const STAGE23_FALLBACK: 'deepseek' | 'openrouter' = 'openrouter';
 
 const PROVIDERS = {
   deepseek: {
@@ -43,7 +51,7 @@ const PROVIDERS = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${key}`,
       'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || '',
-      'X-Title': 'Erlangga Syariah Contract Compliance',
+      'X-Title': 'Syarikat Islam - DSN',
     }),
     buildBody: (system: string, user: string) => ({
       model: 'anthropic/claude-sonnet-4',
@@ -137,10 +145,10 @@ function checkCompleteness(request: any): CompletenessResult {
   }
 
   if (collateralType === 'kendaraan_roda4' && request.collateral?.details?.stnk_active === false) {
-    warnings.push({ field: 'stnk_active', label: 'STNK kadaluarsa', note: 'STNK tidak aktif — AI akan menyarankan jalur solusi perpanjangan' });
+    warnings.push({ field: 'stnk_active', label: 'STNK kadaluarsa', note: 'STNK tidak aktif -- AI akan menyarankan jalur solusi perpanjangan' });
   }
   if (!request.collateral?.details?.notes) {
-    warnings.push({ field: 'notes', label: 'Catatan tambahan', note: 'Tidak ada catatan khusus — analisa berdasarkan data standar saja' });
+    warnings.push({ field: 'notes', label: 'Catatan tambahan', note: 'Tidak ada catatan khusus -- analisa berdasarkan data standar saja' });
   }
 
   return { is_complete: missing.length === 0, missing_fields: missing, warnings };
@@ -149,14 +157,14 @@ function checkCompleteness(request: any): CompletenessResult {
 const SYSTEM_PROMPT = `Kamu adalah AI Legal Analyst spesialis hukum jaminan kredit perbankan syariah Indonesia dengan keahlian mendalam pada:
 
 REGULASI UTAMA YANG WAJIB DIRUJUK:
-1. OJK — Perbankan Syariah
+1. OJK -- Perbankan Syariah
    - POJK No.16/POJK.03/2023 (Prinsip kehati-hatian bank syariah)
    - POJK No.40/POJK.03/2019 (Penilaian kualitas aset bank umum)
    - POJK No.31/POJK.05/2014 (Penyelenggaraan usaha dan kepatuhan syariah)
-   - POJK No.12/POJK.01/2017 (Penerapan program APU PPT — KYC)
+   - POJK No.12/POJK.01/2017 (Penerapan program APU PPT -- KYC)
    - SE OJK No.24/SEOJK.03/2021 (Penilaian kualitas aset)
 
-2. DSN-MUI — Fatwa yang berlaku
+2. DSN-MUI -- Fatwa yang berlaku
    - Fatwa No.4/DSN-MUI/IV/2000 (Murabahah)
    - Fatwa No.8/DSN-MUI/IV/2000 (Musyarakah)
    - Fatwa No.9/DSN-MUI/IV/2000 (Ijarah)
@@ -258,14 +266,14 @@ Status kepemilikan: ${ownershipDesc[d.ownership_status] || d.ownership_status}
   if (c.type === 'kendaraan_roda4') {
     prompt += `Nomor kendaraan  : ${d.vehicle_plate || 'Tidak diberikan'}
 Tahun kendaraan  : ${d.vehicle_year || 'Tidak diberikan'}
-Status STNK      : ${d.stnk_active === false ? 'KADALUARSA — perlu penanganan' : 'Aktif'}
+Status STNK      : ${d.stnk_active === false ? 'KADALUARSA -- perlu penanganan' : 'Aktif'}
 `;
   }
 
   if (['tanah_shm', 'tanah_shgb', 'bangunan'].includes(c.type)) {
     prompt += `No. sertifikat   : ${d.certificate_number || 'Tidak diberikan'}
 Alamat jaminan   : ${d.address || 'Tidak diberikan'}
-Luas             : ${d.area_m2 ? d.area_m2 + ' m²' : 'Tidak diberikan'}
+Luas             : ${d.area_m2 ? d.area_m2 + ' m2' : 'Tidak diberikan'}
 `;
   }
 
@@ -278,7 +286,7 @@ Surat keterangan waris  : ${d.heirs_certificate ? 'Tersedia' : 'Belum ada'}
 
   if (d.ownership_status === 'harta_bersama') {
     prompt += `\n=== HARTA BERSAMA ===
-Persetujuan pasangan    : ${d.spouse_consent ? 'Sudah ada (bermaterai)' : 'BELUM ADA — wajib hukum'}
+Persetujuan pasangan    : ${d.spouse_consent ? 'Sudah ada (bermaterai)' : 'BELUM ADA -- wajib hukum'}
 `;
   }
 
@@ -318,7 +326,7 @@ ${importantCorrelations.map((c: any, i: number) => `[PENTING-${i + 1}] ${c.findi
 
     if (allInferences.length > 0) {
       prompt += `\n=== INFERENSI DATA INTELLIGENCE ===
-${allInferences.map((inf: any, i: number) => `[INF-${i + 1}] ${inf.basis} → ${inf.inference} → Aksi: ${inf.action_required}`).join('\n')}
+${allInferences.map((inf: any, i: number) => `[INF-${i + 1}] ${inf.basis} -> ${inf.inference} -> Aksi: ${inf.action_required}`).join('\n')}
 `;
     }
 
@@ -359,7 +367,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Request tidak ditemukan' }, { status: 404 });
     }
 
-    // ── STAGE 1: Hard completeness check (lokal) ─────────────
+    // -- STAGE 1: Hard completeness check (lokal) -------------
     const completeness = checkCompleteness(request);
 
     if (!completeness.is_complete) {
@@ -392,13 +400,29 @@ export async function POST(req: NextRequest) {
       },
     }).eq('id', request_id);
 
-    // ── STAGE 2+3: AI Analysis ───────────────────────────────
+    // -- STAGE 2+3: AI Analysis -------------------------------
     // Deklarasi provider dan apiKey DULU sebelum digunakan
-    const provider = PROVIDERS[PROVIDER];
-    const apiKey = process.env[provider.apiKeyEnv];
+    // Twin engine: gunakan Claude Sonnet untuk Stage 2-3 legal analysis
+  const engineKey = STAGE23_ENGINE;
+  const provider = PROVIDERS[engineKey];
+    // Primary: Claude Sonnet untuk legal reasoning
+    let provider = PROVIDERS[STAGE23_ENGINE];
+    let apiKey = process.env[provider.apiKeyEnv];
+
+    // Fallback ke OpenRouter jika ANTHROPIC_API_KEY tidak ada
     if (!apiKey) {
-      return NextResponse.json({ error: `${provider.apiKeyEnv} tidak dikonfigurasi` }, { status: 500 });
+      console.warn(`Stage 2-3: ${provider.apiKeyEnv} tidak ada, fallback ke ${STAGE23_FALLBACK}`);
+      provider = PROVIDERS[STAGE23_FALLBACK];
+      apiKey = process.env[provider.apiKeyEnv];
     }
+
+    if (!apiKey) {
+      return NextResponse.json({
+        error: `Tidak ada AI engine yang terkonfigurasi untuk Stage 2-3. Set ANTHROPIC_API_KEY (Claude Sonnet) atau OPENROUTER_API_KEY sebagai fallback.`
+      }, { status: 500 });
+    }
+
+    console.log(`Stage 2-3 engine: ${provider.apiKeyEnv.replace('_API_KEY', '')}`);
 
     // Legal RAG: inject anchor regulasi ke system prompt
     // Dilakukan SETELAH provider/apiKey siap, SEBELUM AI call
@@ -445,7 +469,7 @@ export async function POST(req: NextRequest) {
       parsed = {
         stage2_compliance: {
           ojk_status: 'needs_clarification',
-          ojk_findings: ['Parse error — review manual diperlukan'],
+          ojk_findings: ['Parse error -- review manual diperlukan'],
           dsn_mui_status: 'needs_clarification',
           dsn_mui_findings: [],
           applicable_regulations: [],
@@ -458,7 +482,7 @@ export async function POST(req: NextRequest) {
           issues: [],
           suggested_clauses: [],
           documents_required: [],
-          ftv_assessment: { recommended_max_ftv: 70, basis: 'Default — analisa manual diperlukan' },
+          ftv_assessment: { recommended_max_ftv: 70, basis: 'Default -- analisa manual diperlukan' },
         },
       };
     }
