@@ -448,10 +448,10 @@ export default function BranchPage() {
                 {mounted && form.rate_value && form.financing_amount && form.tenor_months &&
                   akad?.requires_margin && (
                   <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(192,160,98,.06)', borderRadius: 2, fontSize: 11, color: 'rgba(192,160,98,.6)' }}>
-                    Estimasi angsuran: Rp {Math.round(
+                    Estimasi angsuran: Rp {fmtRp(Math.round(
                       (Number(form.financing_amount) * (1 + Number(form.rate_value) / 100)) / Number(form.tenor_months)
                     ))} / bulan
-                    {' '}. Total harga jual: Rp {Math.round(
+                    {' '}. Total harga jual: Rp {fmtRp(Math.round(
                       Number(form.financing_amount) * (1 + Number(form.rate_value) / 100)
                     ))}
                   </div>
