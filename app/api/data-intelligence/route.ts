@@ -340,7 +340,7 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: activeProvider.buildHeaders(activeApiKey),
       body: JSON.stringify(
-        provider.buildBody(DATA_INTELLIGENCE_PROMPT, buildIntelligencePrompt(request))
+        activeProvider.buildBody(DATA_INTELLIGENCE_PROMPT, buildIntelligencePrompt(request))
       ),
     });
 
@@ -355,7 +355,7 @@ export async function POST(req: NextRequest) {
     }
 
     const aiData = await aiRes.json();
-    const raw = provider.extractText(aiData);
+    const raw = activeProvider.extractText(aiData);
 
     let intelligence: any;
     try {
