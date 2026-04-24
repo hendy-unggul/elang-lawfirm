@@ -8,8 +8,9 @@ import { createClient } from '@supabase/supabase-js';
 //   Stage ini butuh nuance hukum yang hanya Claude miliki.
 // DeepSeek: digunakan di Stage 1b (data-intelligence route)
 // ============================================================
-const STAGE23_ENGINE: 'deepseek' | 'claude' | 'openrouter' = 'claude';
-const STAGE23_FALLBACK: 'deepseek' | 'openrouter' = 'openrouter';
+// Saat ANTHROPIC_API_KEY belum ada, gunakan OpenRouter -> claude-sonnet-4
+const STAGE23_ENGINE: 'deepseek' | 'claude' | 'openrouter' = 'openrouter';
+const STAGE23_FALLBACK: 'deepseek' | 'claude' = 'deepseek'; // last resort
 
 const PROVIDERS = {
   deepseek: {
@@ -311,7 +312,7 @@ ${completeness.warnings.map((w: any) => `- ${w.label}: ${w.note}`).join('\n')}
 
     if (criticalCorrelations.length > 0) {
       prompt += `\n=== TEMUAN KRITIS DARI DATA INTELLIGENCE (Stage 1b) ===
-${criticalCorrelations.map((c: any, i: number) => `[KRITIS-${i + 1}] Field: ${(c.fields_involved || []).join(' × ')}
+${criticalCorrelations.map((c: any, i: number) => `[KRITIS-${i + 1}] Field: ${(c.fields_involved || []).join(' ?? ')}
 Temuan: ${c.finding}
 Dasar hukum: ${c.legal_basis}
 Klarifikasi: ${c.clarification_needed}`).join('\n\n')}
@@ -401,28 +402,23 @@ export async function POST(req: NextRequest) {
     }).eq('id', request_id);
 
     // -- STAGE 2+3: AI Analysis -------------------------------
-    // Deklarasi provider dan apiKey DULU sebelum digunakan
-    // Twin engine: gunakan Claude Sonnet untuk Stage 2-3 legal analysis
-  const engineKey = STAGE23_ENGINE;
-  const provider = PROVIDERS[engineKey];
-    // Primary: Claude Sonnet untuk legal reasoning
+    // Twin engine Stage 2-3: Claude Sonnet untuk legal reasoning
+    // Tidak ada ANTHROPIC_API_KEY? Fallback ke OpenRouter (claude-sonnet-4)
     let provider = PROVIDERS[STAGE23_ENGINE];
     let apiKey = process.env[provider.apiKeyEnv];
 
     // Fallback ke OpenRouter jika ANTHROPIC_API_KEY tidak ada
     if (!apiKey) {
-      console.warn(`Stage 2-3: ${provider.apiKeyEnv} tidak ada, fallback ke ${STAGE23_FALLBACK}`);
+      console.warn('Stage 2-3: primary engine tidak ada, fallback');
       provider = PROVIDERS[STAGE23_FALLBACK];
       apiKey = process.env[provider.apiKeyEnv];
     }
 
     if (!apiKey) {
-      return NextResponse.json({
-        error: `Tidak ada AI engine yang terkonfigurasi untuk Stage 2-3. Set ANTHROPIC_API_KEY (Claude Sonnet) atau OPENROUTER_API_KEY sebagai fallback.`
-      }, { status: 500 });
+      return NextResponse.json({ error: 'Tidak ada AI engine. Set OPENROUTER_API_KEY atau ANTHROPIC_API_KEY' }, { status: 500 });
     }
 
-    console.log(`Stage 2-3 engine: ${provider.apiKeyEnv.replace('_API_KEY', '')}`);
+    console.log('Stage 2-3 engine aktif: ' + provider.apiKeyEnv);
 
     // Legal RAG: inject anchor regulasi ke system prompt
     // Dilakukan SETELAH provider/apiKey siap, SEBELUM AI call
