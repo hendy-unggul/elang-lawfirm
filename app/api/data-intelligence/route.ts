@@ -321,28 +321,24 @@ export async function POST(req: NextRequest) {
       .update({ status: 'data_intelligence' })
       .eq('id', request_id);
 
-    // -- STAGE 1B: AI Data Intelligence -----------------------
-    // Twin engine: gunakan DeepSeek untuk Stage 1b
-  const engineKey = STAGE1B_ENGINE;
-  const provider = PROVIDERS[engineKey];
-    const apiKey = process.env[provider.apiKeyEnv];
+    // -- STAGE 1B: DeepSeek untuk pattern recognition ----------
+    let activeProvider = PROVIDERS[STAGE1B_ENGINE];
+    let activeApiKey = process.env[activeProvider.apiKeyEnv];
 
-    // Jika primary engine tidak terkonfigurasi, fallback
-    if (!apiKey) {
-      console.warn(\`Stage 1b: \${provider.apiKeyEnv} tidak ada, fallback ke \${STAGE1B_FALLBACK}\`);
-      const fallbackProvider = PROVIDERS[STAGE1B_FALLBACK];
-      const fallbackKey = process.env[fallbackProvider.apiKeyEnv];
-      if (!fallbackKey) {
-        return NextResponse.json({ error: \`Tidak ada AI engine yang terkonfigurasi. Set \${provider.apiKeyEnv} atau \${fallbackProvider.apiKeyEnv}\` }, { status: 500 });
-      }
-    }
-    if (!apiKey) {
-      return NextResponse.json({ error: `${provider.apiKeyEnv} tidak dikonfigurasi` }, { status: 500 });
+    // Fallback ke OpenRouter jika DeepSeek tidak ada
+    if (!activeApiKey) {
+      console.warn('Stage 1b: DeepSeek tidak ada, fallback ke OpenRouter');
+      activeProvider = PROVIDERS[STAGE1B_FALLBACK];
+      activeApiKey = process.env[activeProvider.apiKeyEnv];
     }
 
-    const aiRes = await fetch(provider.url, {
+    if (!activeApiKey) {
+      return NextResponse.json({ error: 'Tidak ada AI engine. Set DEEPSEEK_API_KEY atau OPENROUTER_API_KEY' }, { status: 500 });
+    }
+
+    const aiRes = await fetch(activeProvider.url, {
       method: 'POST',
-      headers: provider.buildHeaders(apiKey),
+      headers: activeProvider.buildHeaders(activeApiKey),
       body: JSON.stringify(
         provider.buildBody(DATA_INTELLIGENCE_PROMPT, buildIntelligencePrompt(request))
       ),
