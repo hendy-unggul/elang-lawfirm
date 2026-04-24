@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 // ============================================================
-// PROVIDER CONFIG — sama dengan validate-collateral
+// PROVIDER CONFIG -- sama dengan validate-collateral
 // ============================================================
-const PROVIDER: 'deepseek' | 'claude' | 'openrouter' = 'deepseek';
+// ============================================================
+// TWIN ENGINE -- Stage 1b menggunakan DeepSeek
+// DeepSeek: cepat, efisien untuk pattern recognition & korelasi
+// Claude Sonnet: digunakan di Stage 2-3 untuk legal reasoning
+// ============================================================
+const STAGE1B_ENGINE: 'deepseek' | 'claude' | 'openrouter' = 'deepseek';
+const STAGE1B_FALLBACK: 'claude' | 'openrouter' = 'openrouter';
 
 const PROVIDERS = {
   deepseek: {
@@ -46,7 +52,7 @@ const PROVIDERS = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${key}`,
       'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || '',
-      'X-Title': 'Erlangga Legal Intelligence',
+      'X-Title': 'Syarikat Islam - DSN',
     }),
     buildBody: (system: string, user: string) => ({
       model: 'anthropic/claude-sonnet-4',
@@ -60,8 +66,8 @@ const PROVIDERS = {
 };
 
 // ============================================================
-// STAGE 1A — HARD VALIDATION (lokal, tanpa AI)
-// Hanya cek field wajib kosong/tidak — tidak lebih dari itu
+// STAGE 1A -- HARD VALIDATION (lokal, tanpa AI)
+// Hanya cek field wajib kosong/tidak -- tidak lebih dari itu
 // ============================================================
 
 function hardValidation(r: any): { passed: boolean; empty_fields: string[] } {
@@ -87,7 +93,7 @@ function hardValidation(r: any): { passed: boolean; empty_fields: string[] } {
 }
 
 // ============================================================
-// STAGE 1B — SYSTEM PROMPT: DATA INTELLIGENCE & CORRELATION
+// STAGE 1B -- SYSTEM PROMPT: DATA INTELLIGENCE & CORRELATION
 // Tugas: BUKAN menilai risiko hukum
 // Tugas: membaca, menghubungkan, menemukan inkonsistensi
 // dan menentukan apakah data sudah cukup untuk dianalisa
@@ -95,44 +101,44 @@ function hardValidation(r: any): { passed: boolean; empty_fields: string[] } {
 
 const DATA_INTELLIGENCE_PROMPT = `Kamu adalah Data Intelligence Agent untuk sistem hukum perbankan syariah Indonesia.
 
-TUGAS UTAMAMU — TIGA LAPIS PEMBACAAN:
+TUGAS UTAMAMU -- TIGA LAPIS PEMBACAAN:
 
-LAPIS 1 — PEMBACAAN INDIVIDUAL
+LAPIS 1 -- PEMBACAAN INDIVIDUAL
 Baca setiap field data yang diberikan. Nilai apakah masuk akal secara kontekstual:
 - Apakah nilainya konsisten dengan field lain?
 - Apakah ada nilai yang mengindikasikan sesuatu yang tidak dideklarasikan?
 - Apakah ada nilai yang secara teknis mungkin salah input?
 
-LAPIS 2 — PEMBACAAN KORELASIONAL (INI PALING PENTING)
+LAPIS 2 -- PEMBACAAN KORELASIONAL (INI PALING PENTING)
 Cross-check setiap kombinasi field yang relevan secara hukum. Contoh korelasi yang WAJIB kamu cari:
-- Status perkawinan di KK × nama pemilik sertifikat × ownership_status yang dideklarasikan
-  → Jika menikah + sertifikat atas nama satu pihak + diisi "hak milik pribadi" = presumsi harta bersama belum dipatahkan
-- Tahun kendaraan × nilai pembiayaan × tenor
-  → Kendaraan tua + nilai besar = FTV tersirat tidak wajar, usia ekonomis terlampaui
-- Nomor sertifikat (prefix) × jenis jaminan yang dideklarasikan
-  → Prefix HGB/HGU/HP di nomor sertifikat ≠ klaim SHM
-- Jumlah ahli waris × usia dari KK × ownership_status warisan
-  → Ahli waris minor = perlu penetapan wali PA, bukan sekadar tanda tangan
-- Lokasi jaminan × jenis bangunan × nilai
-  → Lokasi zona bencana = kemungkinan tidak bisa diasuransikan, POJK wajib asuransi
-- Nilai pembiayaan × profil jaminan × tenor
-  → FTV tersirat, kemampuan jaminan cover outstanding di akhir tenor
-- Catatan petugas × data terstruktur
-  → Inkonsistensi antara narasi bebas dan data form (misal: catatan bilang "rumah keluarga" tapi diisi hak pribadi)
-- Nama di sertifikat × nama di KTP pemilik
-  → Perbedaan ejaan, nama gadis vs menikah, perubahan nama resmi
-- Sisa masa HGB × tenor pembiayaan
-  → HGB habis sebelum tenor berakhir = APHT tidak dapat didaftarkan penuh
+- Status perkawinan di KK x nama pemilik sertifikat x ownership_status yang dideklarasikan
+  -> Jika menikah + sertifikat atas nama satu pihak + diisi "hak milik pribadi" = presumsi harta bersama belum dipatahkan
+- Tahun kendaraan x nilai pembiayaan x tenor
+  -> Kendaraan tua + nilai besar = FTV tersirat tidak wajar, usia ekonomis terlampaui
+- Nomor sertifikat (prefix) x jenis jaminan yang dideklarasikan
+  -> Prefix HGB/HGU/HP di nomor sertifikat != klaim SHM
+- Jumlah ahli waris x usia dari KK x ownership_status warisan
+  -> Ahli waris minor = perlu penetapan wali PA, bukan sekadar tanda tangan
+- Lokasi jaminan x jenis bangunan x nilai
+  -> Lokasi zona bencana = kemungkinan tidak bisa diasuransikan, POJK wajib asuransi
+- Nilai pembiayaan x profil jaminan x tenor
+  -> FTV tersirat, kemampuan jaminan cover outstanding di akhir tenor
+- Catatan petugas x data terstruktur
+  -> Inkonsistensi antara narasi bebas dan data form (misal: catatan bilang "rumah keluarga" tapi diisi hak pribadi)
+- Nama di sertifikat x nama di KTP pemilik
+  -> Perbedaan ejaan, nama gadis vs menikah, perubahan nama resmi
+- Sisa masa HGB x tenor pembiayaan
+  -> HGB habis sebelum tenor berakhir = APHT tidak dapat didaftarkan penuh
 
-LAPIS 3 — PEMBACAAN INFERENSIAL
+LAPIS 3 -- PEMBACAAN INFERENSIAL
 Dari kombinasi data, identifikasi apa yang TIDAK disebutkan tapi seharusnya ada:
-- Jika ada anak dalam KK berusia < 18 tahun dan status warisan → siapa yang wakili mereka?
-- Jika kendaraan atas nama pihak ketiga dan ada catatan "dari mertua" → butuh surat kuasa fidusia
-- Jika nilai besar + tenor panjang → apakah ada klausul asuransi jiwa?
-- Jika SHGB + lokasi kawasan industri → apakah HGB di atas HPL negara?
+- Jika ada anak dalam KK berusia < 18 tahun dan status warisan -> siapa yang wakili mereka?
+- Jika kendaraan atas nama pihak ketiga dan ada catatan "dari mertua" -> butuh surat kuasa fidusia
+- Jika nilai besar + tenor panjang -> apakah ada klausul asuransi jiwa?
+- Jika SHGB + lokasi kawasan industri -> apakah HGB di atas HPL negara?
 
 SIKAP YANG BENAR:
-- Kamu BUKAN menilai risiko hukum — itu tugas stage berikutnya
+- Kamu BUKAN menilai risiko hukum -- itu tugas stage berikutnya
 - Kamu seperti asisten research yang memastikan semua data lengkap dan konsisten SEBELUM lawyer mulai kerja
 - Lebih baik terlalu teliti daripada melewatkan sesuatu
 - Setiap temuan inkonsistensi WAJIB disertai pertanyaan klarifikasi yang spesifik
@@ -153,7 +159,7 @@ OUTPUT WAJIB berupa JSON valid persis struktur ini:
       "fields_involved": ["<field 1>", "<field 2>", "..."],
       "correlation_type": "inkonsistensi" | "implikasi_tersembunyi" | "risiko_tersirat" | "data_kurang",
       "severity": "kritis" | "penting" | "informatif",
-      "finding": "<penjelasan korelasi yang ditemukan — spesifik dan konkret>",
+      "finding": "<penjelasan korelasi yang ditemukan -- spesifik dan konkret>",
       "legal_basis": "<dasar hukum mengapa ini relevan>",
       "clarification_needed": "<pertanyaan spesifik yang harus dijawab cabang>"
     }
@@ -168,7 +174,7 @@ OUTPUT WAJIB berupa JSON valid persis struktur ini:
   "documents_to_request": [
     {
       "document": "<nama dokumen>",
-      "reason": "<mengapa diperlukan — berdasarkan korelasi/inferensi mana>",
+      "reason": "<mengapa diperlukan -- berdasarkan korelasi/inferensi mana>",
       "urgency": "wajib_sebelum_analisa" | "wajib_sebelum_akad" | "wajib_sebelum_pencairan" | "pendukung",
       "from_whom": "nasabah" | "penjamin" | "instansi" | "notaris"
     }
@@ -186,7 +192,7 @@ OUTPUT WAJIB berupa JSON valid persis struktur ini:
 Jangan tambahkan teks apapun di luar JSON.`;
 
 // ============================================================
-// BUILD USER PROMPT — semua data diumpan, tidak ada yang
+// BUILD USER PROMPT -- semua data diumpan, tidak ada yang
 // disembunyikan dari AI agar korelasi bisa ditarik maksimal
 // ============================================================
 
@@ -220,7 +226,7 @@ Nama pemilik          : ${d.owner_name || 'KOSONG'}
 Status kepemilikan    : ${d.ownership_status || 'KOSONG'}
 Nomor sertifikat/BPKB : ${d.certificate_number || 'tidak diisi'}
 Alamat jaminan        : ${d.address || 'tidak diisi'}
-Luas                  : ${d.area_m2 ? d.area_m2 + ' m²' : 'tidak diisi'}
+Luas                  : ${d.area_m2 ? d.area_m2 + ' m2' : 'tidak diisi'}
 ${c.type === 'kendaraan_roda4' ? `
 === DETAIL KENDARAAN ===
 Nomor polisi          : ${d.vehicle_plate || 'tidak diisi'}
@@ -239,7 +245,7 @@ Pemilik jaminan       : ${d.owner_name || '-'}
 Apakah sama           : ${r.customer_name && d.owner_name
     ? r.customer_name.toLowerCase().trim() === d.owner_name.toLowerCase().trim()
       ? 'Ya (identik)'
-      : 'TIDAK SAMA — perlu klarifikasi hubungan'
+      : 'TIDAK SAMA -- perlu klarifikasi hubungan'
     : 'tidak dapat dibandingkan'}
 
 === CATATAN BEBAS DARI PETUGAS CABANG ===
@@ -250,9 +256,9 @@ Tanggal pengajuan     : ${new Date().toLocaleDateString('id-ID', { weekday: 'lon
 Branch ID             : ${r.branch_id || 'tidak diketahui'}
 
 Perhatikan khusus:
-1. Korelasi antara nama nasabah dan nama pemilik jaminan — jika berbeda, hubungan apa yang paling mungkin?
+1. Korelasi antara nama nasabah dan nama pemilik jaminan -- jika berbeda, hubungan apa yang paling mungkin?
 2. Status perkawinan yang TERSIRAT dari data (misal: dari catatan, nama, atau konteks)
-3. Nilai pembiayaan vs profil jaminan — apakah proporsinya wajar?
+3. Nilai pembiayaan vs profil jaminan -- apakah proporsinya wajar?
 4. Inkonsistensi antara catatan bebas dan data terstruktur
 5. Apa yang TIDAK ada tapi seharusnya ada berdasarkan konteks
 
@@ -284,7 +290,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Request tidak ditemukan' }, { status: 404 });
     }
 
-    // ── STAGE 1A: Hard validation lokal ──────────────────────
+    // -- STAGE 1A: Hard validation lokal ----------------------
     const hard = hardValidation(request);
     if (!hard.passed) {
       await supabase
@@ -309,15 +315,27 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Update status → data_intelligence_running
+    // Update status -> data_intelligence_running
     await supabase
       .from('contract_requests')
       .update({ status: 'data_intelligence' })
       .eq('id', request_id);
 
-    // ── STAGE 1B: AI Data Intelligence ───────────────────────
-    const provider = PROVIDERS[PROVIDER];
+    // -- STAGE 1B: AI Data Intelligence -----------------------
+    // Twin engine: gunakan DeepSeek untuk Stage 1b
+  const engineKey = STAGE1B_ENGINE;
+  const provider = PROVIDERS[engineKey];
     const apiKey = process.env[provider.apiKeyEnv];
+
+    // Jika primary engine tidak terkonfigurasi, fallback
+    if (!apiKey) {
+      console.warn(\`Stage 1b: \${provider.apiKeyEnv} tidak ada, fallback ke \${STAGE1B_FALLBACK}\`);
+      const fallbackProvider = PROVIDERS[STAGE1B_FALLBACK];
+      const fallbackKey = process.env[fallbackProvider.apiKeyEnv];
+      if (!fallbackKey) {
+        return NextResponse.json({ error: \`Tidak ada AI engine yang terkonfigurasi. Set \${provider.apiKeyEnv} atau \${fallbackProvider.apiKeyEnv}\` }, { status: 500 });
+      }
+    }
     if (!apiKey) {
       return NextResponse.json({ error: `${provider.apiKeyEnv} tidak dikonfigurasi` }, { status: 500 });
     }
@@ -355,7 +373,7 @@ export async function POST(req: NextRequest) {
         correlations_found: [],
         inferences: [],
         documents_to_request: [],
-        questions_for_branch: [{ priority: 'kritis', question: 'Parse error pada analisa AI — mohon review manual', why_needed: 'Sistem tidak dapat memproses respons AI' }],
+        questions_for_branch: [{ priority: 'kritis', question: 'Parse error pada analisa AI -- mohon review manual', why_needed: 'Sistem tidak dapat memproses respons AI' }],
         data_quality_notes: raw,
       };
     }
@@ -373,7 +391,7 @@ export async function POST(req: NextRequest) {
       })
       .eq('id', request_id);
 
-    // Jika tidak siap — kembalikan dengan detail lengkap
+    // Jika tidak siap -- kembalikan dengan detail lengkap
     if (!intelligence.is_ready) {
       const criticalCorrelations = (intelligence.correlations_found || [])
         .filter((c: any) => c.severity === 'kritis');
@@ -397,7 +415,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Data siap — trigger Stage 2-3 langsung
+    // Data siap -- trigger Stage 2-3 langsung
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     fetch(`${baseUrl}/api/validate-collateral`, {
       method: 'POST',
