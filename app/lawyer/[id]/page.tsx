@@ -1,5 +1,12 @@
 'use client';
 
+// Format tanggal konsisten server+client
+function fmtDate(iso: string): string {
+  const d = new Date(iso);
+  const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+  return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+}
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useParams, useRouter } from 'next/navigation';
@@ -180,6 +187,15 @@ function ReviewPage() {
   const [questions, setQuestions] = useState(['']);
   const [copied, setCopied] = useState<number | null>(null);
   const [toast, setToast] = useState('');
+  // Inject CSS client-side only
+  useEffect(() => {
+    const el = document.createElement('style');
+    el.setAttribute('data-page-style', 'true');
+    el.textContent = S;
+    document.head.appendChild(el);
+    return () => { el.remove(); };
+  }, []);
+
 
   useEffect(() => {
     if (!id) return;
@@ -208,7 +224,7 @@ function ReviewPage() {
   const doDraft = async () => {
     setDrafting(true);
     const res = await fetch('/api/generate-draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ request_id: id }) });
-    if (res.ok) { setReq((r: any) => ({ ...r, status: 'draft_ready' })); showToast('Draft kontrak sedang digenerate…'); }
+    if (res.ok) { setReq((r: any) => ({ ...r, status: 'draft_ready' })); showToast('Draft kontrak sedang digenerate...'); }
     else showToast('Gagal generate draft. Coba lagi.');
     setDrafting(false);
   };
@@ -225,13 +241,11 @@ function ReviewPage() {
   const copyClause = (text: string, i: number) => { navigator.clipboard.writeText(text); setCopied(i); setTimeout(() => setCopied(null), 2000); };
 
   if (loading) return (
-    <><style suppressHydrationWarning>{S}</style>
-    <div className="rv"><div className="rv-loading"><div className="rv-spinner" /><div className="rv-loading-txt">Memuat…</div></div></div></>
+    <>    <div className="rv"><div className="rv-loading"><div className="rv-spinner" /><div className="rv-loading-txt">Memuat...</div></div></div></>
   );
 
   if (!req) return (
-    <><style suppressHydrationWarning>{S}</style>
-    <div className="rv"><div className="rv-loading"><div className="rv-loading-txt">Tidak ditemukan</div></div></div></>
+    <>    <div className="rv"><div className="rv-loading"><div className="rv-loading-txt">Tidak ditemukan</div></div></div></>
   );
 
   const intel = req.data_intelligence_result || {};
@@ -261,12 +275,11 @@ function ReviewPage() {
   const nsLbl: Record<string, string> = { under_review: 'Review', info_requested: 'Info diminta', approved: 'Disetujui', rejected: 'Ditolak', draft_ready: 'Draft siap' };
 
   return (
-    <><style suppressHydrationWarning>{S}</style>
-    <div className="rv">
+    <>    <div className="rv">
       <nav className="rv-nav">
         <div className="nav-left">
           <div className="nav-sigil">E</div>
-          <button className="nav-back" onClick={() => router.push('/lawyer')}>← Kembali</button>
+          <button className="nav-back" onClick={() => router.push('/lawyer')}><- Kembali</button>
           <span className="nav-sep">/</span>
           <span className="nav-id">{req.request_number || id?.slice(0, 8).toUpperCase()}</span>
         </div>
@@ -282,7 +295,7 @@ function ReviewPage() {
             <span className="meta-dot" />
             <span className="meta-item">Rp {fmtRp(Number(req.financing_amount))}</span>
             <span className="meta-dot" />
-            <span className="meta-item">{req.tenor_months} bln · {req.margin_percent}%</span>
+            <span className="meta-item">{req.tenor_months} bln . {req.margin_percent}%</span>
           </div>
 
           <div className="tab-bar">
@@ -297,7 +310,7 @@ function ReviewPage() {
             </button>
           </div>
 
-          {/* ── TAB INTEL ── */}
+          {/* -- TAB INTEL -- */}
           {tab === 'intel' && (
             <>
               {corrs.length === 0 && infers.length === 0
@@ -311,7 +324,7 @@ function ReviewPage() {
                         return (
                           <div key={i} className={`intel-item ${cls}`}>
                             <div className="intel-sev">{c.severity}</div>
-                            {c.fields_involved?.length > 0 && <div className="intel-fields">{c.fields_involved.join(' × ')}</div>}
+                            {c.fields_involved?.length > 0 && <div className="intel-fields">{c.fields_involved.join(' x ')}</div>}
                             <div className="intel-finding">{c.finding}</div>
                             {c.legal_basis && <div className="intel-basis">{c.legal_basis}</div>}
                             {c.clarification_needed && (
@@ -332,7 +345,7 @@ function ReviewPage() {
                         <div key={i} className="infer-item">
                           <div className="infer-basis">{inf.basis}</div>
                           <div className="infer-text">{inf.inference}</div>
-                          <div className="infer-action"><span style={{ color: 'rgba(192,160,98,.4)' }}>→</span>{inf.action_required}</div>
+                          <div className="infer-action"><span style={{ color: 'rgba(192,160,98,.4)' }}>-></span>{inf.action_required}</div>
                         </div>
                       ))}
                     </div>
@@ -343,11 +356,11 @@ function ReviewPage() {
                       {infoHist.map((ih: any, i: number) => (
                         <div key={i} className="info-hist-item">
                           <div className="ih-date">
-                            {new Date(ih.asked_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                            {' · '}<span style={{ color: ih.status === 'answered' ? '#6abf80' : '#c0a062' }}>{ih.status === 'answered' ? 'Dijawab' : 'Menunggu'}</span>
+                            {fmtDate(ih.asked_at)}
+                            {' . '}<span style={{ color: ih.status === 'answered' ? '#6abf80' : '#c0a062' }}>{ih.status === 'answered' ? 'Dijawab' : 'Menunggu'}</span>
                           </div>
                           {(ih.questions || []).map((q: string, j: number) => (
-                            <div key={j}><div className="ih-q">{q}</div>{ih.answers?.[j] && <div className="ih-a">↳ {ih.answers[j]}</div>}</div>
+                            <div key={j}><div className="ih-q">{q}</div>{ih.answers?.[j] && <div className="ih-a">??? {ih.answers[j]}</div>}</div>
                           ))}
                         </div>
                       ))}
@@ -358,7 +371,7 @@ function ReviewPage() {
             </>
           )}
 
-          {/* ── TAB ANALYSIS ── */}
+          {/* -- TAB ANALYSIS -- */}
           {tab === 'analysis' && (
             <>
               {!v.risk_level
@@ -370,7 +383,7 @@ function ReviewPage() {
                       <div className="rh-lv">{v.risk_level}</div>
                       <div className="rh-sm">{v.summary}</div>
                     </div>
-                    <div className="rh-sc"><div className="rh-sc-n">{v.risk_score ?? '—'}</div><div className="rh-sc-l">Skor</div></div>
+                    <div className="rh-sc"><div className="rh-sc-n">{v.risk_score ?? '--'}</div><div className="rh-sc-l">Skor</div></div>
                   </div>
 
                   {ftv.recommended_max_ftv && (
@@ -390,14 +403,14 @@ function ReviewPage() {
                         <div className="comp-row">
                           <div className="comp-org">OJK</div>
                           <span className={`comp-pill cp-${compliance.ojk_status}`}>{compliance.ojk_status.replace(/_/g, ' ')}</span>
-                          {compliance.ojk_findings?.length > 0 && <div className="comp-findings">{compliance.ojk_findings.join(' · ')}</div>}
+                          {compliance.ojk_findings?.length > 0 && <div className="comp-findings">{compliance.ojk_findings.join(' . ')}</div>}
                         </div>
                       )}
                       {compliance.dsn_mui_status && (
                         <div className="comp-row">
                           <div className="comp-org">DSN-MUI</div>
                           <span className={`comp-pill cp-${compliance.dsn_mui_status}`}>{compliance.dsn_mui_status.replace(/_/g, ' ')}</span>
-                          {compliance.dsn_mui_findings?.length > 0 && <div className="comp-findings">{compliance.dsn_mui_findings.join(' · ')}</div>}
+                          {compliance.dsn_mui_findings?.length > 0 && <div className="comp-findings">{compliance.dsn_mui_findings.join(' . ')}</div>}
                         </div>
                       )}
                     </div>
@@ -451,7 +464,7 @@ function ReviewPage() {
             </>
           )}
 
-          {/* ── TAB DOCS ── */}
+          {/* -- TAB DOCS -- */}
           {tab === 'docs' && (
             <>
               {docsReq.length === 0 && docsToReq.length === 0
@@ -494,7 +507,7 @@ function ReviewPage() {
           <div className="sidebar-card">
             <div className="sc-head">Pembiayaan</div>
             <div className="sc-body">
-              {[['Nasabah', req.customer_name], ['NIK', req.customer_id_number || '—'], ['Nilai', `Rp ${fmtRp(Number(req.financing_amount))}`], ['Tenor', `${req.tenor_months} bln`], ['Margin', `${req.margin_percent}%`], ['Akad', req.contract_type || 'Murabahah']].map(([k, val]) => (
+              {[['Nasabah', req.customer_name], ['NIK', req.customer_id_number || '--'], ['Nilai', `Rp ${fmtRp(Number(req.financing_amount))}`], ['Tenor', `${req.tenor_months} bln`], ['Margin', `${req.margin_percent}%`], ['Akad', req.contract_type || 'Murabahah']].map(([k, val]) => (
                 <div className="data-row" key={k}><span className="dk">{k}</span><span className="dv">{val}</span></div>
               ))}
             </div>
@@ -503,7 +516,7 @@ function ReviewPage() {
           <div className="sidebar-card">
             <div className="sc-head">Jaminan</div>
             <div className="sc-body">
-              {[['Jenis', jlbl[req.collateral?.type] || '—'], ['Nama', req.collateral?.details?.owner_name || '—'], ['Status', olbl[req.collateral?.details?.ownership_status] || '—'], ['No.', req.collateral?.details?.certificate_number || '—']].map(([k, val]) => (
+              {[['Jenis', jlbl[req.collateral?.type] || '--'], ['Nama', req.collateral?.details?.owner_name || '--'], ['Status', olbl[req.collateral?.details?.ownership_status] || '--'], ['No.', req.collateral?.details?.certificate_number || '--']].map(([k, val]) => (
                 <div className="data-row" key={k}><span className="dk">{k}</span><span className="dv">{val}</span></div>
               ))}
             </div>
@@ -528,7 +541,7 @@ function ReviewPage() {
               </div>
             ) : (
               <>
-                {showNote && <textarea className="note-area" placeholder="Catatan…" value={note} onChange={e => setNote(e.target.value)} />}
+                {showNote && <textarea className="note-area" placeholder="Catatan..." value={note} onChange={e => setNote(e.target.value)} />}
 
                 <button className="btn-approve" onClick={() => doAction('approved')} disabled={acting}>
                   {acting ? <span className="spinner" /> : <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5l3.5 3.5 5.5-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
@@ -550,8 +563,8 @@ function ReviewPage() {
                   <div style={{ marginBottom: 6 }}>
                     {questions.map((q, i) => (
                       <div key={i} className="q-wrap">
-                        {questions.length > 1 && <button className="remove-q" onClick={() => setQuestions(qs => qs.filter((_, j) => j !== i))}>✕</button>}
-                        <textarea className="question-input" placeholder={`Pertanyaan ${i + 1}…`} value={q} onChange={e => setQuestions(qs => qs.map((x, j) => j === i ? e.target.value : x))} />
+                        {questions.length > 1 && <button className="remove-q" onClick={() => setQuestions(qs => qs.filter((_, j) => j !== i))}>???</button>}
+                        <textarea className="question-input" placeholder={`Pertanyaan ${i + 1}...`} value={q} onChange={e => setQuestions(qs => qs.map((x, j) => j === i ? e.target.value : x))} />
                       </div>
                     ))}
                     <button className="add-q-btn" onClick={() => setQuestions(qs => [...qs, ''])}>+ Tambah pertanyaan</button>
