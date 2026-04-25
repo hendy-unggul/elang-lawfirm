@@ -1,4 +1,11 @@
 'use client';
+
+// Format angka konsisten server+client — tidak pakai toLocaleString
+function fmtRp(n: number): string {
+  if (!n || isNaN(n)) return '0';
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
@@ -458,14 +465,14 @@ export default function LawyerDashboard() {
 
   return (
     <>
-      <style>{STYLES}</style>
+      <style suppressHydrationWarning>{STYLES}</style>
       <div className="lw-root">
         {/* Nav */}
         <nav className="lw-nav">
           <div className="nav-left">
             <div className="nav-brand">
               <div className="nav-sigil">E</div>
-              <span className="nav-name">Erlangga SCC</span>
+              <span className="nav-name">Syarikat Islam - DSN</span>
             </div>
             <div className="nav-divider" />
             <span className="nav-module">Syariah Contract Compliance</span>
@@ -608,7 +615,7 @@ export default function LawyerDashboard() {
                         </td>
                         <td>
                           <div className="amount-cell">
-                            Rp {Number(r.financing_amount).toLocaleString('id-ID')}
+                            Rp {fmtRp(Number(r.financing_amount))}
                           </div>
                           <div className="td-sub">{r.tenor_months} bln · {r.margin_percent}%</div>
                         </td>
