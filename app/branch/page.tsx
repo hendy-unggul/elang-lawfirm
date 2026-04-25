@@ -283,7 +283,7 @@ export default function BranchPage() {
 
   return (
     <>
-      <style>{S}</style>
+      <style suppressHydrationWarning>{S}</style>
       <div className="bp">
         <nav className="bp-nav">
           <div className="nav-left">
