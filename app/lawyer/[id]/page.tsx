@@ -241,11 +241,15 @@ function ReviewPage() {
   const copyClause = (text: string, i: number) => { navigator.clipboard.writeText(text); setCopied(i); setTimeout(() => setCopied(null), 2000); };
 
   if (loading) return (
-    <>    <div className="rv"><div className="rv-loading"><div className="rv-spinner" /><div className="rv-loading-txt">Memuat...</div></div></div></>
+    <>
+      <style suppressHydrationWarning>{S}</style>
+      <div className="rv"><div className="rv-loading"><div className="rv-spinner" /><div className="rv-loading-txt">Memuat...</div></div></div></>
   );
 
   if (!req) return (
-    <>    <div className="rv"><div className="rv-loading"><div className="rv-loading-txt">Tidak ditemukan</div></div></div></>
+    <>
+      <style suppressHydrationWarning>{S}</style>
+      <div className="rv"><div className="rv-loading"><div className="rv-loading-txt">Tidak ditemukan</div></div></div></>
   );
 
   const intel = req.data_intelligence_result || {};
@@ -275,11 +279,13 @@ function ReviewPage() {
   const nsLbl: Record<string, string> = { under_review: 'Review', info_requested: 'Info diminta', approved: 'Disetujui', rejected: 'Ditolak', draft_ready: 'Draft siap' };
 
   return (
-    <>    <div className="rv">
+    <>
+      <style suppressHydrationWarning>{S}</style>
+      <div className="rv">
       <nav className="rv-nav">
         <div className="nav-left">
           <div className="nav-sigil">E</div>
-          <button className="nav-back" onClick={() => router.push('/lawyer')}><- Kembali</button>
+          <button className="nav-back" onClick={() => router.push('/lawyer')}>&#x2190; Kembali</button>
           <span className="nav-sep">/</span>
           <span className="nav-id">{req.request_number || id?.slice(0, 8).toUpperCase()}</span>
         </div>
