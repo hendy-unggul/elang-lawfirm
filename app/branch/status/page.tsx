@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { Suspense, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { NotificationProvider, NotificationBell, StatusToastContainer } from '@/lib/notification-system';
+import { NotificationBell, StatusToastContainer } from '@/lib/notification-system';
 
 const STYLES = `
 *, *::before, *::after { box-sizing: border-box; }
@@ -376,7 +376,6 @@ function StatusContent() {
 
   const branchIdForNotif = req?.branch_id || null;
   return (
-    <NotificationProvider branchId={branchIdForNotif}>
     <>
       <style suppressHydrationWarning>{STYLES}</style>
       <div className="st-root">
@@ -835,7 +834,6 @@ function StatusContent() {
       </div>
       <StatusToastContainer />
     </>
-    </NotificationProvider>
   );
 }
 
