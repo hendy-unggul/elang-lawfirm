@@ -47,7 +47,7 @@ export default function LoginPage() {
 
   return (
     <>
-      <style>{`
+      <style suppressHydrationWarning>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         .login-root {
@@ -368,8 +368,8 @@ export default function LoginPage() {
           <div className="brand-mark">
             <div className="brand-sigil">E</div>
             <div>
-              <div className="brand-name">Erlangga</div>
-              <div className="brand-tagline">Syariah Contract Compliance</div>
+              <div className="brand-name">Syarikat Islam</div>
+              <div className="brand-tagline">DSN Syariah Contract Compliance</div>
             </div>
           </div>
 
