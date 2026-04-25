@@ -1,6 +1,13 @@
 'use client';
 
-// Format angka konsisten server+client — tidak pakai toLocaleString
+// Format tanggal konsisten server+client
+function fmtDate(iso: string): string {
+  const d = new Date(iso);
+  const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+  return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+// Format angka konsisten server+client -- tidak pakai toLocaleString
 function fmtRp(n: number): string {
   if (!n || isNaN(n)) return '0';
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -373,6 +380,15 @@ export default function LawyerDashboard() {
   const [search, setSearch] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [userInitials, setUserInitials] = useState('');
+  // Inject CSS client-side only
+  useEffect(() => {
+    const el = document.createElement('style');
+    el.setAttribute('data-page-style', 'true');
+    el.textContent = STYLES;
+    document.head.appendChild(el);
+    return () => { el.remove(); };
+  }, []);
+
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -459,14 +475,12 @@ export default function LawyerDashboard() {
   };
 
   const formatDate = (iso: string) => {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: '2-digit' });
+    if (!iso) return '--';
+    return fmtDate(iso);
   };
 
   return (
-    <>
-      <style suppressHydrationWarning>{STYLES}</style>
-      <div className="lw-root">
+    <>      <div className="lw-root">
         {/* Nav */}
         <nav className="lw-nav">
           <div className="nav-left">
@@ -522,7 +536,7 @@ export default function LawyerDashboard() {
             {/* Toolbar */}
             <div className="lw-toolbar">
               <div className="toolbar-left">
-                <div className="page-eyebrow">Syariah Contract Compliance — Review Panel</div>
+                <div className="page-eyebrow">Syariah Contract Compliance -- Review Panel</div>
                 <h1 className="page-title">
                   {filter === 'all' ? 'Semua Permintaan' :
                    filter === 'under_review' ? 'Perlu Review' :
@@ -536,7 +550,7 @@ export default function LawyerDashboard() {
                     <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2"/>
                     <path d="M9.5 9.5L12 12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
                   </svg>
-                  <input className="search-input" placeholder="Cari nasabah, no. request…"
+                  <input className="search-input" placeholder="Cari nasabah, no. request..."
                     value={search} onChange={e => setSearch(e.target.value)} />
                 </div>
               </div>
@@ -605,19 +619,19 @@ export default function LawyerDashboard() {
                         </td>
                         <td>
                           <div className="td-name">{r.customer_name}</div>
-                          <div className="td-sub">{r.customer_id_number || '—'}</div>
+                          <div className="td-sub">{r.customer_id_number || '--'}</div>
                         </td>
                         <td>
                           <div style={{ fontSize: 13, color: 'rgba(232,230,224,0.55)' }}>
-                            {jaminanLabel[r.collateral?.type] || r.collateral?.type || '—'}
+                            {jaminanLabel[r.collateral?.type] || r.collateral?.type || '--'}
                           </div>
-                          <div className="td-sub">{r.collateral?.details?.owner_name || '—'}</div>
+                          <div className="td-sub">{r.collateral?.details?.owner_name || '--'}</div>
                         </td>
                         <td>
                           <div className="amount-cell">
                             Rp {fmtRp(Number(r.financing_amount))}
                           </div>
-                          <div className="td-sub">{r.tenor_months} bln · {r.margin_percent}%</div>
+                          <div className="td-sub">{r.tenor_months} bln . {r.margin_percent}%</div>
                         </td>
                         <td>{riskChip(r)}</td>
                         <td>{statusChip(r.status)}</td>
