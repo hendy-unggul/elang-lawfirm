@@ -38,7 +38,7 @@ export default function LandingPage() {
 
   return (
     <>
-      <style>{S}</style>
+      <style suppressHydrationWarning>{S}</style>
       <div className="lp">
         <div className="lp-sigil">E</div>
         <div className="lp-label">Syarikat Islam - DSN</div>
