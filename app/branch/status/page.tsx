@@ -84,6 +84,7 @@ const STYLES = `
 /* Processing */
 .processing-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; }
 .proc-spinner { width: 32px; height: 32px; border: 1.5px solid rgba(192,160,98,0.2); border-top-color: #c0a062; border-radius: 50%; animation: spin 0.9s linear infinite; margin-bottom: 20px; }
+@keyframes procBar { 0% { left: -40%; } 100% { left: 100%; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .proc-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 400; color: #1a1a1a; margin-bottom: 6px; }
 .proc-desc { font-size: 13px; font-weight: 300; color: rgba(26,26,26,0.45); line-height: 1.6; max-width: 400px; }
@@ -196,14 +197,14 @@ const STYLES = `
 }
 `;
 
-// ── Stage pipeline config ────────────────────────────────────
+// -- Stage pipeline config ------------------------------------
 const PIPELINE_STAGES = [
-  { key: 'data_incomplete',    label: 'Data', short: 'Data' },
-  { key: 'data_intelligence',  label: 'Korelasi', short: 'Korelasi' },
-  { key: 'compliance_check',   label: 'Compliance', short: 'OJK/DSN' },
-  { key: 'under_analysis',     label: 'Analisa', short: 'Risiko' },
-  { key: 'under_review',       label: 'Review', short: 'Lawyer' },
-  { key: 'approved',           label: 'Selesai', short: 'Selesai' },
+  { key: 'data_incomplete',   label: 'Data masuk',    short: 'Data' },
+  { key: 'data_intelligence', label: 'Inteligensi AI', short: 'AI' },
+  { key: 'compliance_check',  label: 'Verifikasi',    short: 'OJK/DSN' },
+  { key: 'under_analysis',    label: 'Diagnosis',     short: 'Risiko' },
+  { key: 'under_review',      label: 'Review lawyer', short: 'Lawyer' },
+  { key: 'approved',          label: 'Clearance',     short: 'Selesai' },
 ];
 
 const STAGE_ORDER = ['data_intelligence', 'compliance_check', 'under_analysis', 'under_review', 'approved', 'draft_ready'];
@@ -223,16 +224,16 @@ function getStageState(status: string, stageKey: string) {
 }
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
-  data_incomplete:   { label: 'Data tidak lengkap', cls: 'sb-incomplete' },
-  data_intelligence: { label: 'Verifikasi kesesuaian akad', cls: 'sb-check' },
-  compliance_check:  { label: 'Cek regulasi', cls: 'sb-check' },
-  under_analysis:    { label: 'Analisa AI berjalan', cls: 'sb-analysis' },
-  analysis_failed:   { label: 'Analisa gagal', cls: 'sb-incomplete' },
-  under_review:      { label: 'Menunggu review lawyer', cls: 'sb-review' },
-  info_requested:    { label: 'Info tambahan diperlukan', cls: 'sb-pending' },
-  approved:          { label: 'Disetujui', cls: 'sb-approved' },
-  rejected:          { label: 'Ditolak', cls: 'sb-rejected' },
-  draft_ready:       { label: 'Draft kontrak siap', cls: 'sb-approved' },
+  data_incomplete:   { label: 'Data perlu dilengkapi', cls: 'sb-incomplete' },
+  data_intelligence: { label: 'AI sedang membaca & memetakan', cls: 'sb-check' },
+  compliance_check:  { label: 'AI meneliti regulasi & fatwa', cls: 'sb-check' },
+  under_analysis:    { label: 'AI mendiagnosa & menyimpulkan', cls: 'sb-analysis' },
+  analysis_failed:   { label: 'Analisa gagal -- coba lagi', cls: 'sb-incomplete' },
+  under_review:      { label: 'Menunggu clearance lawyer', cls: 'sb-review' },
+  info_requested:    { label: 'Lawyer membutuhkan klarifikasi', cls: 'sb-pending' },
+  approved:          { label: 'Akad mendapat clearance', cls: 'sb-approved' },
+  rejected:          { label: 'Akad ditolak -- perlu revisi', cls: 'sb-rejected' },
+  draft_ready:       { label: 'Kontrak siap ditandatangani', cls: 'sb-approved' },
 };
 
 function StatusContent() {
@@ -297,11 +298,11 @@ function StatusContent() {
 
   if (!req) return (
     <>
-      <style>{STYLES}</style>
+      <style suppressHydrationWarning>{STYLES}</style>
       <div className="st-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 28, height: 28, border: '1.5px solid rgba(192,160,98,0.3)', borderTopColor: '#c0a062', borderRadius: '50%', animation: 'spin 0.9s linear infinite', margin: '0 auto 16px' }} />
-          <div style={{ fontSize: 13, color: 'rgba(26,26,26,0.35)', fontFamily: 'sans-serif' }}>Memuat…</div>
+          <div style={{ fontSize: 13, color: 'rgba(26,26,26,0.35)', fontFamily: 'sans-serif' }}>Memuat...</div>
         </div>
       </div>
     </>
@@ -321,10 +322,43 @@ function StatusContent() {
   const jaminanLabel: Record<string, string> = { tanah_shm: 'Tanah SHM', tanah_shgb: 'Tanah SHGB', bangunan: 'Bangunan', kendaraan_roda4: 'Kendaraan' };
   const formatRp = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
 
-  const PROC_MESSAGES: Record<string, { stage: string; title: string; desc: string }> = {
-    data_intelligence: { stage: 'Stage 1b', title: 'Membaca korelasi data', desc: 'AI sedang menarik hubungan antar data — identitas, kepemilikan, jaminan, dan konteks tersembunyi.' },
-    compliance_check:  { stage: 'Stage 2', title: 'Memeriksa kepatuhan regulasi', desc: 'Memverifikasi setiap ketentuan OJK, fatwa DSN-MUI, dan regulasi jaminan yang berlaku.' },
-    under_analysis:    { stage: 'Stage 3', title: 'Menganalisa risiko hukum', desc: 'AI menyusun penilaian risiko, solusi per isu, klausul pengamanan, dan dokumen yang diperlukan.' },
+  const PROC_MESSAGES: Record<string, {
+    stage: string; phase: string; title: string;
+    steps: string[]; desc: string;
+  }> = {
+    data_intelligence: {
+      stage: 'Tahap 1', phase: 'Inteligensi Data',
+      title: 'AI sedang membaca & memetakan...',
+      steps: [
+        'Membaca seluruh data yang masuk',
+        'Memetakan hubungan antar field',
+        'Meneliti inkonsistensi dan anomali',
+        'Memperkaya konteks dengan regulasi',
+      ],
+      desc: 'AI membaca dokumen, memetakan relasi kepemilikan, dan mendeteksi potensi masalah yang tidak terlihat dari data permukaan.',
+    },
+    compliance_check: {
+      stage: 'Tahap 2', phase: 'Verifikasi Regulasi',
+      title: 'AI meneliti fatwa & regulasi...',
+      steps: [
+        'Mencocokkan dengan fatwa DSN-MUI',
+        'Memverifikasi kepatuhan POJK',
+        'Memeriksa aspek hukum jaminan (UUHT/Fidusia)',
+        'Mendiagnosa potensi pelanggaran',
+      ],
+      desc: 'Setiap aspek akad diperiksa terhadap database regulasi syariah -- fatwa, POJK, UU, hingga KHI.',
+    },
+    under_analysis: {
+      stage: 'Tahap 3', phase: 'Diagnosis & Rekomendasi',
+      title: 'AI mendiagnosa & menyarankan...',
+      steps: [
+        'Mendiagnosa tingkat risiko hukum',
+        'Menyimpulkan temuan dari semua layer',
+        'Menyusun jalur solusi per isu',
+        'Merekomendasikan klausul pengamanan',
+      ],
+      desc: 'AI menyusun laporan diagnosis lengkap -- risiko, solusi, klausul kontrak, dan daftar dokumen untuk clearance.',
+    },
   };
 
   // Intelligence findings
@@ -344,7 +378,7 @@ function StatusContent() {
   return (
     <NotificationProvider branchId={branchIdForNotif}>
     <>
-      <style>{STYLES}</style>
+      <style suppressHydrationWarning>{STYLES}</style>
       <div className="st-root">
         <nav className="st-nav">
           <div className="nav-brand">
@@ -353,7 +387,7 @@ function StatusContent() {
           </div>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <NotificationBell />
-            <button className="nav-back" onClick={() => router.push('/branch')}>← Permintaan baru</button>
+            <button className="nav-back" onClick={() => router.push('/branch')}><- Permintaan baru</button>
           </div>
         </nav>
 
@@ -391,8 +425,8 @@ function StatusContent() {
               <div className="info-value serif">{formatRp(req.financing_amount)}</div>
             </div>
             <div className="info-cell">
-              <div className="info-label">Tenor · Margin</div>
-              <div className="info-value">{req.tenor_months} bln · {req.margin_percent}%</div>
+              <div className="info-label">Tenor . Margin</div>
+              <div className="info-value">{req.tenor_months} bln . {req.margin_percent}%</div>
             </div>
             <div className="info-cell">
               <div className="info-label">Jaminan</div>
@@ -400,7 +434,7 @@ function StatusContent() {
             </div>
           </div>
 
-          {/* ── DATA INCOMPLETE ── */}
+          {/* -- DATA INCOMPLETE -- */}
           {isIncomplete && (
             <>
               {intel.empty_fields?.length > 0 && (
@@ -448,7 +482,7 @@ function StatusContent() {
                         <div key={i} className="correlation-item corr-kritis">
                           <div className="corr-badge">Kritis</div>
                           {c.fields_involved?.length > 0 && (
-                            <div className="corr-fields">{c.fields_involved.join(' × ')}</div>
+                            <div className="corr-fields">{c.fields_involved.join(' x ')}</div>
                           )}
                           <div className="corr-finding">{c.finding}</div>
                           {c.legal_basis && <div className="corr-basis">{c.legal_basis}</div>}
@@ -490,7 +524,7 @@ function StatusContent() {
                 </div>
               )}
 
-              {/* ── FORM JAWABAN LAWYER — muncul saat status info_requested ── */}
+              {/* -- FORM JAWABAN LAWYER -- muncul saat status info_requested -- */}
               {req.status === 'info_requested' && !answerSent && (() => {
                 const infoReqs: any[] = req.info_requests || [];
                 const latest = infoReqs[infoReqs.length - 1];
@@ -520,7 +554,7 @@ function StatusContent() {
                           <textarea
                             value={answers[i] || ''}
                             onChange={e => { const a = [...answers]; a[i] = e.target.value; setAnswers(a); }}
-                            placeholder="Jawaban Anda…"
+                            placeholder="Jawaban Anda..."
                             rows={3}
                             style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 3, padding: '9px 11px', fontFamily: 'DM Sans, sans-serif', fontSize: 13, fontWeight: 300, color: '#e8e6e0', resize: 'vertical', outline: 'none', lineHeight: 1.6, minHeight: 72 }}
                           />
@@ -531,7 +565,7 @@ function StatusContent() {
                         disabled={submittingAnswers}
                         style={{ width: '100%', padding: '12px', background: '#c0a062', border: 'none', borderRadius: 3, fontFamily: 'DM Sans, sans-serif', fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: '#0c0d0f', fontWeight: 500, cursor: submittingAnswers ? 'not-allowed' : 'pointer', opacity: submittingAnswers ? .5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                         {submittingAnswers
-                          ? <><span style={{ width: 12, height: 12, border: '1.5px solid rgba(12,13,15,.3)', borderTopColor: '#0c0d0f', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} /> Mengirim…</>
+                          ? <><span style={{ width: 12, height: 12, border: '1.5px solid rgba(12,13,15,.3)', borderTopColor: '#0c0d0f', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} /> Mengirim...</>
                           : 'Kirim jawaban ke lawyer'}
                       </button>
                     </div>
@@ -570,21 +604,63 @@ function StatusContent() {
             </>
           )}
 
-          {/* ── PROCESSING ── */}
-          {isProcessing && (
-            <div className="content-card">
-              <div className="card-body">
-                <div className="processing-state">
-                  <div className="proc-stage-label">{PROC_MESSAGES[status]?.stage}</div>
-                  <div className="proc-spinner" />
-                  <div className="proc-title">{PROC_MESSAGES[status]?.title}</div>
-                  <div className="proc-desc">{PROC_MESSAGES[status]?.desc}</div>
+          {/* -- PROCESSING -- */}
+          {isProcessing && PROC_MESSAGES[status] && (() => {
+            const msg = PROC_MESSAGES[status]!;
+            return (
+              <div className="content-card" style={{ overflow: 'hidden' }}>
+                <div className="card-body" style={{ padding: '24px 20px' }}>
+                  {/* Phase label */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                    <div className="proc-spinner" style={{ flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: 10, letterSpacing: '.18em', textTransform: 'uppercase', color: '#c0a062', marginBottom: 3 }}>
+                        {msg.stage} -- {msg.phase}
+                      </div>
+                      <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 17, fontWeight: 400, color: '#1a1a1a' }}>
+                        {msg.title}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step-by-step AI actions */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+                    {msg.steps.map((step: string, i: number) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{
+                          width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                          background: 'rgba(192,160,98,.12)', border: '1px solid rgba(192,160,98,.3)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 9, color: '#c0a062', fontWeight: 500
+                        }}>{i + 1}</div>
+                        <div style={{ fontSize: 12, color: 'rgba(26,26,26,.6)', lineHeight: 1.4 }}>{step}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Description */}
+                  <div style={{
+                    fontSize: 12, fontWeight: 300, color: 'rgba(26,26,26,.4)',
+                    lineHeight: 1.65, borderTop: '1px solid rgba(26,26,26,.06)',
+                    paddingTop: 12
+                  }}>
+                    {msg.desc}
+                  </div>
+                </div>
+
+                {/* Animated progress bar at bottom */}
+                <div style={{ height: 3, background: 'rgba(192,160,98,.1)', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{
+                    position: 'absolute', top: 0, left: 0, height: '100%',
+                    width: '40%', background: 'rgba(192,160,98,.6)',
+                    animation: 'procBar 1.8s ease-in-out infinite',
+                  }} />
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
-          {/* ── INTELLIGENCE SUMMARY (setelah data siap, sebelum/sesudah analisa) ── */}
+          {/* -- INTELLIGENCE SUMMARY (setelah data siap, sebelum/sesudah analisa) -- */}
           {!isIncomplete && !isProcessing && correlations.length > 0 && (
             <div className="content-card">
               <div className="card-head">
@@ -601,7 +677,7 @@ function StatusContent() {
                   Temuan korelasi data
                 </div>
                 <span style={{ fontSize: 11, color: 'rgba(26,26,26,0.35)' }}>
-                  {critCorr.length} kritis · {correlations.filter((c: any) => c.severity === 'penting').length} penting
+                  {critCorr.length} kritis . {correlations.filter((c: any) => c.severity === 'penting').length} penting
                 </span>
               </div>
               <div className="card-body">
@@ -611,7 +687,7 @@ function StatusContent() {
                     return (
                       <div key={i} className={`correlation-item ${cls}`}>
                         <div className="corr-badge">{c.severity}</div>
-                        {c.fields_involved?.length > 0 && <div className="corr-fields">{c.fields_involved.join(' × ')}</div>}
+                        {c.fields_involved?.length > 0 && <div className="corr-fields">{c.fields_involved.join(' x ')}</div>}
                         <div className="corr-finding">{c.finding}</div>
                         {c.legal_basis && <div className="corr-basis">{c.legal_basis}</div>}
                       </div>
@@ -622,7 +698,7 @@ function StatusContent() {
             </div>
           )}
 
-          {/* ── FULL ANALYSIS ── */}
+          {/* -- FULL ANALYSIS -- */}
           {hasAnalysis && (
             <>
               {/* Risk hero */}
@@ -633,7 +709,7 @@ function StatusContent() {
                   <div className="rh-summary">{v.summary}</div>
                 </div>
                 <div className="rh-score">
-                  <div className="rh-score-num">{v.risk_score ?? '—'}</div>
+                  <div className="rh-score-num">{v.risk_score ?? '--'}</div>
                   <div className="rh-score-lbl">Skor</div>
                 </div>
               </div>
@@ -652,7 +728,7 @@ function StatusContent() {
                           <span className={`comp-pill pill-${compliance.ojk_status}`}>{compliance.ojk_status.replace('_', ' ')}</span>
                         </div>
                         {compliance.ojk_findings?.length > 0 && (
-                          <div className="comp-findings">{compliance.ojk_findings.join(' · ')}</div>
+                          <div className="comp-findings">{compliance.ojk_findings.join(' . ')}</div>
                         )}
                       </div>
                     )}
@@ -663,7 +739,7 @@ function StatusContent() {
                           <span className={`comp-pill pill-${compliance.dsn_mui_status}`}>{compliance.dsn_mui_status.replace('_', ' ')}</span>
                         </div>
                         {compliance.dsn_mui_findings?.length > 0 && (
-                          <div className="comp-findings">{compliance.dsn_mui_findings.join(' · ')}</div>
+                          <div className="comp-findings">{compliance.dsn_mui_findings.join(' . ')}</div>
                         )}
                       </div>
                     )}
@@ -740,7 +816,7 @@ function StatusContent() {
             </>
           )}
 
-          {/* ── APPROVED / REJECTED ── */}
+          {/* -- APPROVED / REJECTED -- */}
           {(status === 'approved' || status === 'rejected') && (
             <div className={`content-card`} style={{ border: `1px solid ${status === 'approved' ? 'rgba(40,160,80,0.2)' : 'rgba(220,80,60,0.2)'}` }}>
               <div className="card-body" style={{ padding: '20px', textAlign: 'center' }}>
@@ -767,7 +843,7 @@ export default function StatusPage() {
   return (
     <Suspense fallback={
       <div style={{ minHeight: '100vh', background: '#f5f3ef', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontSize: 13, color: 'rgba(26,26,26,0.3)', fontFamily: 'sans-serif' }}>Memuat…</div>
+        <div style={{ fontSize: 13, color: 'rgba(26,26,26,0.3)', fontFamily: 'sans-serif' }}>Memuat...</div>
       </div>
     }>
       <StatusContent />
