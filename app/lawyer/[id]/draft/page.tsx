@@ -6,7 +6,6 @@ import { supabase } from '@/lib/supabaseClient';
 import { useParams, useRouter } from 'next/navigation';
 
 const S = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 .dp-root{min-height:100vh;background:#0c0d0f;font-family:'DM Sans',sans-serif;color:#e8e6e0}
 .dp-nav{height:56px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;padding:0 40px;position:sticky;top:0;z-index:100;background:#0c0d0f}
@@ -112,12 +111,12 @@ export default function DraftPreviewPage() {
   };
 
   if (loading) return (
-    <><style>{S}</style>
+    <><style suppressHydrationWarning>{S}</style>
     <div className="dp-root"><div className="loading"><div className="loading-spinner"/><div className="loading-txt">Memuat draft…</div></div></div></>
   );
 
   if (!req?.draft_contract) return (
-    <><style>{S}</style>
+    <><style suppressHydrationWarning>{S}</style>
     <div className="dp-root"><div className="loading"><div className="loading-txt">Draft belum tersedia</div></div></div></>
   );
 
@@ -129,7 +128,7 @@ export default function DraftPreviewPage() {
   const reqNo = req.request_number || id.slice(0, 8).toUpperCase();
 
   return (
-    <><style>{S}</style>
+    <><style suppressHydrationWarning>{S}</style>
     <div className="dp-root">
       <nav className="dp-nav">
         <div className="nav-left">
