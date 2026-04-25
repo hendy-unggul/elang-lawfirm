@@ -20,8 +20,8 @@ export interface Notification {
 }
 
 const STATUS_MESSAGES: Record<string, { message: string; priority: 'high' | 'medium' | 'info' }> = {
-  data_incomplete:  { message: 'Data tidak lengkap — lengkapi sesuai instruksi.', priority: 'high' },
-  compliance_check: { message: 'Data diterima. AI memeriksa kepatuhan regulasi…', priority: 'info' },
+  data_incomplete:  { message: 'Data tidak lengkap -- lengkapi sesuai instruksi.', priority: 'high' },
+  compliance_check: { message: 'Data diterima. AI memeriksa kepatuhan regulasi...', priority: 'info' },
   under_analysis:   { message: 'Analisa risiko hukum sedang berjalan.', priority: 'info' },
   under_review:     { message: 'Analisa selesai. Menunggu review lawyer.', priority: 'info' },
   info_requested:   { message: 'Lawyer membutuhkan informasi tambahan. Segera dijawab.', priority: 'high' },
@@ -31,7 +31,7 @@ const STATUS_MESSAGES: Record<string, { message: string; priority: 'high' | 'med
 };
 
 // ============================================================
-// CONTEXT — satu subscriber untuk seluruh halaman
+// CONTEXT -- satu subscriber untuk seluruh halaman
 // Mencegah "cannot add callbacks after subscribe()" error
 // ============================================================
 interface NotifContextValue {
@@ -47,7 +47,7 @@ const NotifContext = createContext<NotifContextValue>({
 });
 
 // ============================================================
-// PROVIDER — pasang di layout atau page level, SEKALI saja
+// PROVIDER -- pasang di layout atau page level, SEKALI saja
 // ============================================================
 export function NotificationProvider({
   branchId,
@@ -162,7 +162,7 @@ export function NotificationProvider({
 }
 
 // ============================================================
-// HOOK — pakai context, tidak buat subscriber baru
+// HOOK -- pakai context, tidak buat subscriber baru
 // ============================================================
 export function useNotifications() {
   return useContext(NotifContext);
@@ -210,9 +210,9 @@ const BELL_CSS = `
 `;
 
 // ============================================================
-// COMPONENT — NotificationBell (pakai context, bukan hook mandiri)
+// COMPONENT -- NotificationBell (pakai context, bukan hook mandiri)
 // ============================================================
-export function NotificationBell() {
+export function NotificationBell({ branchId }: { branchId?: string | null } = {}) {
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -234,7 +234,9 @@ export function NotificationBell() {
     if (diff < 60000) return 'Baru saja';
     if (diff < 3600000) return `${Math.floor(diff / 60000)} menit lalu`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)} jam lalu`;
-    return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+    const d = new Date(iso);
+    const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+    return d.getDate() + ' ' + months[d.getMonth()];
   };
 
   // Jangan render sampai mount agar tidak ada hydration mismatch
@@ -297,7 +299,7 @@ export function NotificationBell() {
 }
 
 // ============================================================
-// COMPONENT — StatusToastContainer (pakai context yang sama)
+// COMPONENT -- StatusToastContainer (pakai context yang sama)
 // ============================================================
 interface ToastItem {
   id: string;
@@ -345,9 +347,9 @@ export function StatusToastContainer() {
           <div className="ti-body">
             <div className="ti-req">{t.request_number}</div>
             <div className="ti-msg">{t.message}</div>
-            <a href={t.action_url} className="ti-link">Lihat detail →</a>
+            <a href={t.action_url} className="ti-link">Lihat detail -></a>
           </div>
-          <button className="ti-close" onClick={() => setToasts(p => p.filter(x => x.id !== t.id))}>✕</button>
+          <button className="ti-close" onClick={() => setToasts(p => p.filter(x => x.id !== t.id))}>???</button>
         </div>
       ))}
     </div>
