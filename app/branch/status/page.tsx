@@ -270,6 +270,15 @@ function StatusContent() {
     } catch { showToast('Error. Coba lagi.'); }
     setSubmittingAnswers(false);
   };
+  // Inject CSS client-side only
+  useEffect(() => {
+    const el = document.createElement('style');
+    el.setAttribute('data-page-style', 'true');
+    el.textContent = STYLES;
+    document.head.appendChild(el);
+    return () => { el.remove(); };
+  }, []);
+
 
   useEffect(() => {
     if (!id) return;
@@ -297,9 +306,7 @@ function StatusContent() {
   };
 
   if (!req) return (
-    <>
-      <style suppressHydrationWarning>{STYLES}</style>
-      <div className="st-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+    <>      <div className="st-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 28, height: 28, border: '1.5px solid rgba(192,160,98,0.3)', borderTopColor: '#c0a062', borderRadius: '50%', animation: 'spin 0.9s linear infinite', margin: '0 auto 16px' }} />
           <div style={{ fontSize: 13, color: 'rgba(26,26,26,0.35)', fontFamily: 'sans-serif' }}>Memuat...</div>
