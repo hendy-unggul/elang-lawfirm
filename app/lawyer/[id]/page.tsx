@@ -159,7 +159,12 @@ const S = `
 @media(max-width:900px){.rv-body{grid-template-columns:1fr}.rv-left{padding:20px 16px 40px}.rv-right{padding:16px}.rv-nav{padding:0 20px}}
 `;
 
-export default function ReviewPage() {
+export default function fmtRp(n: number): string {
+  if (!n || isNaN(n)) return '0';
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function ReviewPage() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
@@ -220,12 +225,12 @@ export default function ReviewPage() {
   const copyClause = (text: string, i: number) => { navigator.clipboard.writeText(text); setCopied(i); setTimeout(() => setCopied(null), 2000); };
 
   if (loading) return (
-    <><style>{S}</style>
+    <><style suppressHydrationWarning>{S}</style>
     <div className="rv"><div className="rv-loading"><div className="rv-spinner" /><div className="rv-loading-txt">Memuat…</div></div></div></>
   );
 
   if (!req) return (
-    <><style>{S}</style>
+    <><style suppressHydrationWarning>{S}</style>
     <div className="rv"><div className="rv-loading"><div className="rv-loading-txt">Tidak ditemukan</div></div></div></>
   );
 
@@ -256,7 +261,7 @@ export default function ReviewPage() {
   const nsLbl: Record<string, string> = { under_review: 'Review', info_requested: 'Info diminta', approved: 'Disetujui', rejected: 'Ditolak', draft_ready: 'Draft siap' };
 
   return (
-    <><style>{S}</style>
+    <><style suppressHydrationWarning>{S}</style>
     <div className="rv">
       <nav className="rv-nav">
         <div className="nav-left">
@@ -275,7 +280,7 @@ export default function ReviewPage() {
           <div className="case-meta">
             <span className="meta-item">{jlbl[req.collateral?.type] || req.collateral?.type}</span>
             <span className="meta-dot" />
-            <span className="meta-item">Rp {Number(req.financing_amount).toLocaleString('id-ID')}</span>
+            <span className="meta-item">Rp {fmtRp(Number(req.financing_amount))}</span>
             <span className="meta-dot" />
             <span className="meta-item">{req.tenor_months} bln · {req.margin_percent}%</span>
           </div>
@@ -489,7 +494,7 @@ export default function ReviewPage() {
           <div className="sidebar-card">
             <div className="sc-head">Pembiayaan</div>
             <div className="sc-body">
-              {[['Nasabah', req.customer_name], ['NIK', req.customer_id_number || '—'], ['Nilai', `Rp ${Number(req.financing_amount).toLocaleString('id-ID')}`], ['Tenor', `${req.tenor_months} bln`], ['Margin', `${req.margin_percent}%`], ['Akad', req.contract_type || 'Murabahah']].map(([k, val]) => (
+              {[['Nasabah', req.customer_name], ['NIK', req.customer_id_number || '—'], ['Nilai', `Rp ${fmtRp(Number(req.financing_amount))}`], ['Tenor', `${req.tenor_months} bln`], ['Margin', `${req.margin_percent}%`], ['Akad', req.contract_type || 'Murabahah']].map(([k, val]) => (
                 <div className="data-row" key={k}><span className="dk">{k}</span><span className="dv">{val}</span></div>
               ))}
             </div>
