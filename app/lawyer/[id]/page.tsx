@@ -383,7 +383,7 @@ function ReviewPage() {
               {!v.risk_level
                 ? <div className="empty-tab">Analisa hukum belum tersedia</div>
                 : <>
-                  <div className={`risk-hero ${rhCls}`}>
+      <div className={`risk-hero ${rhCls}`}>
                     <div>
                       <div className="rh-ey">Tingkat risiko hukum</div>
                       <div className="rh-lv">{v.risk_level}</div>
