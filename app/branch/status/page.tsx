@@ -306,7 +306,8 @@ function StatusContent() {
   };
 
   if (!req) return (
-    <>      <div className="st-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+    <>
+      <div className="st-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 28, height: 28, border: '1.5px solid rgba(192,160,98,0.3)', borderTopColor: '#c0a062', borderRadius: '50%', animation: 'spin 0.9s linear infinite', margin: '0 auto 16px' }} />
           <div style={{ fontSize: 13, color: 'rgba(26,26,26,0.35)', fontFamily: 'sans-serif' }}>Memuat...</div>
@@ -381,7 +382,6 @@ function StatusContent() {
   const docsRequired: any[] = v.documents_required || [];
   const compliance = v.compliance || {};
 
-  const branchIdForNotif = req?.branch_id || null;
   return (
     <>
       <style suppressHydrationWarning>{STYLES}</style>
@@ -393,7 +393,7 @@ function StatusContent() {
           </div>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <NotificationBell />
-            <button className="nav-back" onClick={() => router.push('/branch')}><- Permintaan baru</button>
+            <button className="nav-back" onClick={() => router.push('/branch')}>&#x2190; Permintaan baru</button>
           </div>
         </nav>
 
