@@ -166,12 +166,12 @@ const S = `
 @media(max-width:900px){.rv-body{grid-template-columns:1fr}.rv-left{padding:20px 16px 40px}.rv-right{padding:16px}.rv-nav{padding:0 20px}}
 `;
 
-export default function fmtRp(n: number): string {
+function fmtRp(n: number): string {
   if (!n || isNaN(n)) return '0';
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-function ReviewPage() {
+export default function ReviewPage() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
