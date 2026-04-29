@@ -351,7 +351,7 @@ export default function ReviewPage() {
                         <div key={i} className="infer-item">
                           <div className="infer-basis">{inf.basis}</div>
                           <div className="infer-text">{inf.inference}</div>
-                          <div className="infer-action"><span style={{ color: 'rgba(192,160,98,.4)' }}>&#8594;</span>
+                          <div className="infer-action"><span style={{ color: 'rgba(192,160,98,.4)' }}>&#8594;</span>{inf.action_required}</div>
                         </div>
                       ))}
                     </div>
